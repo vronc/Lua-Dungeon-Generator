@@ -83,8 +83,8 @@ function Tiles:generateRoom()
   width = math.random(minRoomSize, maxRoomSize)
   
   ok = true
-  for i=startRow, startRow+height do
-    for j=startCol, startCol+width do
+  for i=startRow-1, startRow+height+1 do
+    for j=startCol-1, startCol+width+1 do
       
       if not (self:getTile(i,j).roomId == 0) then
         ok = false
