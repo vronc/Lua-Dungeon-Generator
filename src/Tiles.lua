@@ -1,4 +1,5 @@
-seed = os.time()
+--seed = os.time()
+seed = 1552665750
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -125,20 +126,48 @@ function Tiles:generateCorridors()
   
   -- Choosing root room
   repeat
-    randomRow = math.random(1,self.height)
-    randomCol = math.random(1,self.width)
-  until self:isRoom(randomRow, randomCol)
-
-  startTile = self:getTile(randomRow,randomCol)
-  
+    row = math.random(1,self.height)
+    col = math.random(1,self.width)
+  until self:isRoom(row, col)
+ 
+ corridors = 0
   repeat
-    break
-  until (self:isRoom() and not getTile(r,c) == startRoom)
-
+    endRow, endCol = self:generateCorridor(row, col)
+    row = endRow
+    col = endCol
+    corridors = corridors +1
+    
+    -- to be changed, row is nil as the corridor has hit a wall
+    -- need to implement backtracking in generateCorridor
+  until corridors == 5 or row==nil
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:generateCorridor(row, col)
+  -- Input: coordinates for corridor's start
+  -- Output: coordinated for corridor's end
   
+  
+  -- TO BE DONE: implement backtracking
+  
+  print(row,col)
+  startTile = self:getTile(row,col)
+  
+  repeat
+    dice = math.random(1,4)
+    if dice == 1 then row = row +1
+    elseif dice == 2 then row = row -1
+    elseif dice == 3 then col = col +1
+    elseif dice == 4 then col = col -1 end
+    self:getTile(row, col).class = "."
+
+    if (row>self.height or row<1 or col>self.width or col<1) then print("breaking") return end
+    isStartRoom = (self:getTile(row,col).roomId == startTile.roomId)
+  until (self:isRoom(row, col) and not isStartRoom)
+  return row, col
+end
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 -----------------------------------------------------------
 -- - - - - - - - - - - - Tile object - - - - - - - - - - -- 
 -----------------------------------------------------------
