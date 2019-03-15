@@ -12,10 +12,12 @@ Tiles = {height, width, matrix}
 Tiles.__index = Tiles
 
 function Tiles:new(height, width)
+  if height < 10 or width < 10 then error("Tiles must have height>=10, width>=10") end
   local tiles = {}
   tiles.height = height
   tiles.width = width
   tiles.matrix ={}
+  
   -- Will hold all rooms, index is ID 
   tiles.rooms = {}
   
@@ -57,6 +59,7 @@ function Tiles:printTiles ()
       row=""
       for j=0,self.width+1 do
         row=row..self.matrix[i][j].class.." "
+        -- row=row..self.matrix[i][j].ids.." "    -- for exposing room-ids
       end
       print(row)
     end
@@ -106,8 +109,8 @@ function Tiles:buildRoom(startR, startC, endR, endC)
     table.insert(self.rooms, Room:new(id))
     for i=startR, endR do
       for j=startC, endC do
-        self:getTile(i,j).roomId = id
-        self:getTile(i,j).class = "."
+        self:getTile(i,j).roomId = "."
+        self:getTile(i,j).class = id
       end
     end
 end
@@ -128,22 +131,42 @@ function Tile:new(c)
   local tile = {}
   tile.class = c
   tile.roomId = 0
+  
+  setmetatable(tile, Tile)
+  
   return tile
+  
 end
 
 -----------------------------------------------------------
 -- - - - - - - - - - - - Room object - - - - - - - - - - -- 
 -----------------------------------------------------------
 
+-- Room is a Node-like object.
+
+--  * Has unique id
+--  * Keeps track of neighbouring rooms.
+
 Room = { id }
-Tile.__index = Room
+Room.__index = Room
 
 function Room:new(id)
   local room = {}
   room.id = id
+  room.neighbours = {}
+  
+  setmetatable(room, Room)
+  
   return room
 end
 
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Room:addNeighbour(n)
+  table.insert(self.neighbours, n)
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 -- View example
 m = Tiles:new(40,40)
