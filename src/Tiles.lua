@@ -64,6 +64,14 @@ function Tiles:printTiles ()
   
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
+  function Tiles:generateRooms(amount)
+    for i = 1,amount do
+      self:generateRoom()
+    end
+  end
+  
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+  
 function Tiles:generateRoom()
   -- Will randomly place rooms across tiles (no overlapping)
   minRoomSize = 3
@@ -139,5 +147,5 @@ end
 
 -- View example
 m = Tiles:new(40,40)
-m:generateRoom()
+m:generateRooms(10)
 m:printTiles()
