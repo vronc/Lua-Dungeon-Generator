@@ -1,3 +1,5 @@
+require "Queue"
+
 --seed = os.time()
 seed = 1552665750
 math.randomseed(seed)
@@ -24,9 +26,11 @@ function Tiles:new(height, width)
   
   setmetatable(tiles, Tiles)
 
-  -- Create upper and lower bound walls
   tiles.matrix[0] = {}
   wallTile = Tile:new("#")
+  wallTile.visited = true
+  
+  -- Create upper and lower bound walls
   for j=0,width+1 do
     tiles.matrix[0][j] = wallTile
   end
@@ -35,6 +39,7 @@ function Tiles:new(height, width)
     tiles.matrix[height+1][j] = wallTile
   end
   
+  -- Create left and right bound walls
   for i=1,height do
     tiles.matrix[i] = {}     -- create a new row
     tiles.matrix[i][0] = wallTile
@@ -136,10 +141,8 @@ function Tiles:generateCorridors()
     row = endRow
     col = endCol
     corridors = corridors +1
-    
-    -- to be changed, row is nil as the corridor has hit a wall
-    -- need to implement backtracking in generateCorridor
-  until corridors == 5 or row==nil
+  
+  until corridors == 5
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -150,23 +153,53 @@ function Tiles:generateCorridor(row, col)
   
   
   -- TO BE DONE: implement backtracking
-  
-  print(row,col)
+  q = Queue:new()
+  Queue.pushleft(q, {row,col})
   startTile = self:getTile(row,col)
+  startTile.visited = true
   
   repeat
-    dice = math.random(1,4)
-    if dice == 1 then row = row +1
-    elseif dice == 2 then row = row -1
-    elseif dice == 3 then col = col +1
-    elseif dice == 4 then col = col -1 end
-    self:getTile(row, col).class = "."
-
-    if (row>self.height or row<1 or col>self.width or col<1) then print("breaking") return end
+    tile = self:getTile(row,col)
+    print(row,col)
+    unvisitedNeigh = self:getUnvisitedNeigh(row, col)
+    
+    if #unvisitedNeigh > 0 then
+      n = math.random(1,#unvisitedNeigh)
+      neigh = unvisitedNeigh[n]
+      
+      Queue.pushleft(q, neigh)
+      row = neigh[1]
+      col = neigh[2]
+      self:getTile(row, col).class = "."
+      self:getTile(row, col).visited = true
+    else
+      cell = Queue.popleft(q)
+      row = cell[1]
+      col = cell[2]
+    end
     isStartRoom = (self:getTile(row,col).roomId == startTile.roomId)
   until (self:isRoom(row, col) and not isStartRoom)
   return row, col
 end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:getUnvisitedNeigh(row, col)
+  
+  unvisited = {}
+  step = {-1,1}
+  for i = 1,2 do
+
+    if not self:getTile(row+step[i], col).visited then 
+      table.insert(unvisited, {row+step[i], col})
+    end
+    if not self:getTile(row, col+step[i]).visited then 
+      table.insert(unvisited, {row, col+step[i]})
+    end
+  end
+  return unvisited
+end
+
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 -----------------------------------------------------------
 -- - - - - - - - - - - - Tile object - - - - - - - - - - -- 
