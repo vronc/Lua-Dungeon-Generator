@@ -1,7 +1,7 @@
 require "Queue"
 
---seed = os.time()
-seed = 1552665750
+seed = os.time()
+seed = 1552676386
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -156,11 +156,11 @@ function Tiles:generateCorridor(row, col)
   q = Queue:new()
   Queue.pushleft(q, {row,col})
   startTile = self:getTile(row,col)
-  startTile.visited = true
   
   repeat
     tile = self:getTile(row,col)
-    print(row,col)
+    self:getTile(row, col).visited = true
+    tile.class = "."
     unvisitedNeigh = self:getUnvisitedNeigh(row, col)
     
     if #unvisitedNeigh > 0 then
@@ -170,12 +170,11 @@ function Tiles:generateCorridor(row, col)
       Queue.pushleft(q, neigh)
       row = neigh[1]
       col = neigh[2]
-      self:getTile(row, col).class = "."
-      self:getTile(row, col).visited = true
     else
-      cell = Queue.popleft(q)
-      row = cell[1]
-      col = cell[2]
+      tile.class = " "
+      backTrack = Queue.popleft(q)
+      row = backTrack[1]
+      col = backTrack[2]
     end
     isStartRoom = (self:getTile(row,col).roomId == startTile.roomId)
   until (self:isRoom(row, col) and not isStartRoom)
