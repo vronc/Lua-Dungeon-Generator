@@ -61,6 +61,48 @@ function Tiles:printTiles ()
       print(row)
     end
   end
+  
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+  
+function Tiles:generateRoom()
+  -- Will randomly place rooms across tiles (no overlapping)
+  minRoomSize = 3
+  maxRoomSize = 10 
+  startRow = math.random(1, self.height-maxRoomSize)
+  startCol = math.random(1, self.width-maxRoomSize)
+  
+  height = math.random(minRoomSize, maxRoomSize)
+  width = math.random(minRoomSize, maxRoomSize)
+  
+  ok = true
+  for i=startRow, startRow+height do
+    for j=startCol, startCol+width do
+      
+      if not (self:getTile(i,j).roomId == 0) then
+        ok = false
+        break
+      end
+    end
+  end
+  
+  if ok then
+    self:buildRoom(startRow, startCol, startRow+height, startCol+width)
+  end
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:buildRoom(startR, startC, endR, endC)
+  -- paint room onto board
+    id = #self.rooms+1
+    table.insert(self.rooms, Room:new(id))
+    for i=startR, endR do
+      for j=startC, endC do
+        self:getTile(i,j).roomId = id
+        self:getTile(i,j).class = "."
+      end
+    end
+end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
@@ -97,4 +139,5 @@ end
 
 -- View example
 m = Tiles:new(40,40)
+m:generateRoom()
 m:printTiles()
