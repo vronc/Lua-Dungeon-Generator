@@ -89,30 +89,52 @@ function Tiles:generateRoom()
   for i=startRow-1, startRow+height+1 do
     for j=startCol-1, startCol+width+1 do
       
-      if not (self:getTile(i,j).roomId == 0) then
-        ok = false
-        break
+      if (self:isRoom(i,j)) then
+        -- Room is overlapping other room, room is discarded
+        return
       end
     end
   end
-  
-  if ok then
-    self:buildRoom(startRow, startCol, startRow+height, startCol+width)
-  end
+  self:buildRoom(startRow, startCol, startRow+height, startCol+width)
+end
+
+function Tiles:isRoom(i,j)
+  return (not (self:getTile(i,j).roomId == 0))
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:buildRoom(startR, startC, endR, endC)
-  -- paint room onto board
+  -- paint room onto board 
     id = #self.rooms+1
     table.insert(self.rooms, Room:new(id))
     for i=startR, endR do
       for j=startC, endC do
-        self:getTile(i,j).roomId = "."
-        self:getTile(i,j).class = id
+        tile = self:getTile(i,j)
+        tile.roomId = id
+        tile.class = "."      -- floor tile
       end
     end
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:generateCorridors()
+  if #self.rooms < 1 then error("Can't generate corridors, no rooms exists")
+  elseif #self.rooms == 1 then return end
+  
+  -- Choosing root room
+  repeat
+    randomRow = math.random(1,self.height)
+    randomCol = math.random(1,self.width)
+  until self:isRoom(randomRow, randomCol)
+
+  startTile = self:getTile(randomRow,randomCol)
+  
+  repeat
+    break
+  until (self:isRoom() and not getTile(r,c) == startRoom)
+
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -124,7 +146,7 @@ end
 -- Tile objects have a class (wall, entrance, floor, stairway...)
 -- Unaware of placement in tiles matrix
 
-Tile = {class, visited, boundingBox}
+Tile = {class, boundingBox}
 Tile.__index = Tile
 
 function Tile:new(c)
@@ -168,7 +190,9 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+
 -- View example
 m = Tiles:new(40,40)
 m:generateRooms(10)
+m:generateCorridors()
 m:printTiles()
