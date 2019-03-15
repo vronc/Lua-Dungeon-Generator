@@ -174,14 +174,16 @@ end
 
 -- Tile objects have a class (wall, entrance, floor, stairway...)
 -- Unaware of placement in tiles matrix
+-- visited attribute used when carving corridors
 
-Tile = {class, boundingBox}
+Tile = {class, roomId, visited}
 Tile.__index = Tile
 
 function Tile:new(c)
   local tile = {}
   tile.class = c
   tile.roomId = 0
+  tile.visited = false
   
   setmetatable(tile, Tile)
   
@@ -198,7 +200,7 @@ end
 --  * Has unique id
 --  * Keeps track of neighbouring rooms.
 
-Room = { id }
+Room = { id, neighbours }
 Room.__index = Room
 
 function Room:new(id)
