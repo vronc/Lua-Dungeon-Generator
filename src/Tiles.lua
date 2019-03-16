@@ -1,8 +1,5 @@
-require "Queue"
-
 seed = os.time()
---seed = 1552698983
-seed=1552740241
+--seed=1552740241
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -27,36 +24,37 @@ function Tiles:new(height, width)
   
   setmetatable(tiles, Tiles)
 
-  tiles.matrix[0] = {}
+  tiles:initMap(height, width)
+  return tiles
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:initMap(height, width)
+
+  self.matrix[0] = {}
   wallTile = Tile:new("#")
   wallTile.visited = true
   
   -- Create upper and lower bound walls
   for j=0,width+1 do
-    tiles.matrix[0][j] = wallTile
+    self.matrix[0][j] = wallTile
   end
-  tiles.matrix[height+1] = {}
+  self.matrix[height+1] = {}
   for j=0,width+1 do
-    tiles.matrix[height+1][j] = wallTile
+    self.matrix[height+1][j] = wallTile
   end
   
   -- Create left and right bound walls
   for i=1,height do
-    tiles.matrix[i] = {}     -- create a new row
-    tiles.matrix[i][0] = wallTile
+    self.matrix[i] = {}     -- create a new row
+    self.matrix[i][0] = wallTile
     for j=1,width do
-      tiles.matrix[i][j] = Tile:new(" ")
+      self.matrix[i][j] = Tile:new(" ")
     end
-    tiles.matrix[i][width+1] = wallTile
+    self.matrix[i][width+1] = wallTile
   end
-  return tiles
-end
-
-  -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-  
-function Tiles:getTile(r, c)
-  return self.matrix[r][c]
-end
+end 
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
@@ -72,6 +70,27 @@ function Tiles:printTiles ()
     end
   end
   
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:getRandRoom()
+  -- return: Random room
+  local i = math.random(1,#self.rooms)
+  return self.rooms[i]
+end
+
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+  
+function Tiles:getTile(r, c)
+  return self.matrix[r][c]
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:isRoom(i,j)
+  return (not (self:getTile(i,j).roomId == 0))
+end
+
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
   function Tiles:generateRooms(amount)
@@ -105,14 +124,11 @@ function Tiles:generateRoom()
   self:buildRoom(startRow, startCol, startRow+height, startCol+width)
 end
 
-function Tiles:isRoom(i,j)
-  return (not (self:getTile(i,j).roomId == 0))
-end
-
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:buildRoom(startR, startC, endR, endC)
   -- paint room onto board 
+  
     id = #self.rooms+1
     room = Room:new(id)
     room:addNeighbour(id)    -- is it's own neighbour
@@ -132,34 +148,33 @@ function Tiles:buildRoom(startR, startC, endR, endC)
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
+  
 function Tiles:generateCorridors()
   if #self.rooms < 1 then error("Can't generate corridors, no rooms exists")
   elseif #self.rooms == 1 then return end
   
   -- Choosing root room
-  repeat
-    row = math.random(1,self.height)
-    col = math.random(1,self.width)
-    roomId = self:getTile(row, col).roomId
-  until (self:isRoom(row, col))
- 
- room = self.rooms[roomId]
-  -- Kruskals
+  room = self:getRandRoom()
+  roomId = room.id
+  
+  -- ### KRUSKALS (ish) ### --
+  
   visited = {}
   unvisited = table.clone(self.rooms)
-  unvisited[roomId]=nil
-  
+  unvisited[roomId]=false
   visited[roomId] = true
   repeat
     dist = 1e309    -- ~inf
+    
+    -- Choosing unvisited room
     i = 0
     repeat
       i=i+1
       unvRoom = unvisited[i]
-
     until (unvRoom)
 
+    -- Determining if choosen room is closer than previous choice
+    -- can be removed for extra cycles: (not room:areNeighbours(unvRoom)) 
     if (room:distanceTo(unvRoom) < dist) and
     (not room:areNeighbours(unvRoom)) then
       nextRoom = unvRoom
@@ -169,11 +184,9 @@ function Tiles:generateCorridors()
     room:addNeighbour(nextRoom.id)
     nextRoom:addNeighbour(room.id)
     self:buildCorridor(room, nextRoom)
-    if not visited[nextRoom.id] then 
-        visited[nextRoom.id]=true
-        unvisited[i]=nil
-
-      end
+    visited[nextRoom.id]=true
+    unvisited[i]=false
+    
     room=nextRoom
     for i=1,#visited do
     end
@@ -210,27 +223,6 @@ function Tiles:buildCorridor(sRoom, eRoom)
 end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function getDist(row1, col1, row2, col2)
-  return math.sqrt(
-    math.pow(math.abs(row1-row2),2)+
-    math.pow(math.abs(col1-col2),2)
-    )
-end  
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Tiles:isFullyConnected()
-  for i=1,#self.rooms do
-    allConnected = true
-    if #self.rooms[i].neighbours < #self.rooms-1 then
-      allConnected = false
-      break
-    end
-  end
-  return allConnected
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 -----------------------------------------------------------
 -- - - - - - - - - - - - Tile object - - - - - - - - - - -- 
 -----------------------------------------------------------
@@ -306,6 +298,12 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+
+-----------------------------------------------------------
+-- - - - - - - - - - - Global functions - - - - - - - - - -
+-----------------------------------------------------------
+
+
 -- source: https://stackoverflow.com/questions/2705793/how-to-get-number-of-entries-in-a-lua-table
 function tablelength(T)
   local count = 0
@@ -313,10 +311,21 @@ function tablelength(T)
   return count
 end
 
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
 -- source: http://lua-users.org/wiki/CopyTable
 function table.clone(org)
   return {table.unpack(org)}
 end
+
+function getDist(row1, col1, row2, col2)
+  return math.sqrt(
+    math.pow(math.abs(row1-row2),2)+
+    math.pow(math.abs(col1-col2),2)
+    )
+end  
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 -- View example
 m = Tiles:new(50,50)
