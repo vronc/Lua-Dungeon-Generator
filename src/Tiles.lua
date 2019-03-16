@@ -1,10 +1,7 @@
 require "Queue"
 
 seed = os.time()
---seed = 1552689734
---seed=1552676386
---seed=1552692988     --gets stuck
---seed = 1552693161
+--seed = 1552698983
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -136,7 +133,8 @@ function Tiles:generateCorridors()
   repeat
     row = math.random(1,self.height)
     col = math.random(1,self.width)
-  until self:isRoom(row, col)
+    room = self.rooms[self:getTile(row,col).roomId]
+  until (self:isRoom(row, col) and not room:hasNeighbours())
  
  corridors = 0
   repeat
@@ -179,6 +177,7 @@ function Tiles:generateCorridor(row, col)
         if backTrack == "end" then return "deadEnd" end
         row = backTrack[1]
         col = backTrack[2]
+        self:getTile(row,col).visited=true
       until #self:getUnvisitedNeigh(row, col)>0
     end
     roomId = self:getTile(row,col).roomId
@@ -276,14 +275,17 @@ end
   
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+function Room:hasNeighbours()
+  return (#self.neighbours>0)
+end
+
 
 -- View example
-m = Tiles:new(40,40)
-m:generateRooms(5)
+m = Tiles:new(50,50)
+m:generateRooms(10)
 allConnected = false
 
 repeat
   m:generateCorridors()
-  m:printTiles()
 until m:isConnected()
 m:printTiles()
