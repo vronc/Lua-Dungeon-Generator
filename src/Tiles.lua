@@ -2,6 +2,7 @@ require "Queue"
 
 seed = os.time()
 --seed = 1552698983
+seed=1552740241
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -62,7 +63,7 @@ end
 function Tiles:printTiles ()
 
     for i=0,self.height+1 do
-      row=""
+      local row=""
       for j=0,self.width+1 do
         row=row..self.matrix[i][j].class.." "
         --row=row..self.matrix[i][j].roomId.." "    -- for exposing room-ids
@@ -113,7 +114,13 @@ end
 function Tiles:buildRoom(startR, startC, endR, endC)
   -- paint room onto board 
     id = #self.rooms+1
-    table.insert(self.rooms, Room:new(id))
+    room = Room:new(id)
+    room.neighbours[id] = true    -- is it's own neighbour
+    
+    r=endR-math.floor((endR-startR)/2)
+    c=endC-math.floor((endC-startC)/2)
+    room.center = {r=r, c=c}
+    table.insert(self.rooms, room)
     for i=startR, endR do
       for j=startC, endC do
         tile = self:getTile(i,j)
@@ -121,6 +128,7 @@ function Tiles:buildRoom(startR, startC, endR, endC)
         tile.class = "."      -- floor tile
       end
     end
+    
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -133,62 +141,67 @@ function Tiles:generateCorridors()
   repeat
     row = math.random(1,self.height)
     col = math.random(1,self.width)
-    room = self.rooms[self:getTile(row,col).roomId]
-  until (self:isRoom(row, col) and not room:hasNeighbours())
+    roomId = self:getTile(row, col).roomId
+  until (self:isRoom(row, col))
  
- corridors = 0
+ room = self.rooms[roomId]
+  -- Kruskals
+  visited = {}
+  visited[roomId] = true
   repeat
-    endRow, endCol = self:generateCorridor(row, col)
-    if endRow == "deadEnd" then break end
-    row = endRow
-    col = endCol
-    corridors = corridors +1
-  
-  until corridors == 10
+    dist = 1e309    -- ~inf
+    for i=1,#self.rooms do
+      if room:distanceTo(self.rooms[i]) < dist and
+      not room.neighbours[i] then
+        nextRoom = self.rooms[i]
+        dist = room:distanceTo(self.rooms[i])
+      end
+    end
+    room:addNeighbour(nextRoom.id)
+    nextRoom:addNeighbour(room.id)
+    self:buildCorridor(room, nextRoom)
+    if not visited[nextRoom.id] then visited[nextRoom.id]=true end
+    room=nextRoom
+    
+  until #visited == #self.rooms
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Tiles:generateCorridor(row, col)
-  -- Input: coordinates for corridor's start
-  -- Output: coordinates for corridor's end
-
-  q = Queue:new()
-  startId = self:getTile(row,col).roomId
-  start={row,col}
   
+function Tiles:buildCorridor(sRoom, eRoom)
+  local row = sRoom.center.r
+  local col = sRoom.center.c
+  local erow = eRoom.center.r
+  local ecol = eRoom.center.c
+  
+  dist = getDist(row, col, erow, ecol)
   repeat
-    tile = self:getTile(row,col)
-    tile.visited = true
-    tile.class = "."
-    unvisitedNeigh = self:getUnvisitedNeigh(row, col)
-    
-    if #unvisitedNeigh > 0 then
-      n = math.random(1,#unvisitedNeigh)
-      neigh = unvisitedNeigh[n]
-      Queue.pushleft(q, neigh)
-      row = neigh[1]
-      col = neigh[2]
-    else
-      tile.class = " "
+    self:getTile(row, col).class = "."
 
-      repeat
-        backTrack = Queue.popleft(q)
-        if backTrack == "end" then return "deadEnd" end
-        row = backTrack[1]
-        col = backTrack[2]
-        self:getTile(row,col).visited=true
-      until #self:getUnvisitedNeigh(row, col)>0
+    if getDist(row+1, col, erow, ecol) < dist then
+      row = row+1
+      dist = getDist(row, col, erow, ecol)
+    elseif getDist(row-1, col, erow, ecol) < dist then
+      row = row-1
+      dist = getDist(row, col, erow, ecol)
+    elseif getDist(row, col+1, erow, ecol) < dist then
+      col=col+1
+      dist = getDist(row, col, erow, ecol)
+    elseif getDist(row, col-1, erow, ecol) < dist then
+      col=col-1
+      dist = getDist(row, col, erow, ecol)
     end
-    roomId = self:getTile(row,col).roomId
-    isStartRoom = (roomId == startId)
-  until (self:isRoom(row, col) and not isStartRoom)
+  until (dist <= 0)
   
-  print(roomId, startId)
-  self.rooms[roomId]:addNeighbour(startId)
-  self.rooms[startId]:addNeighbour(roomId)
-  return row, col
 end
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function getDist(row1, col1, row2, col2)
+  return math.sqrt(
+    math.pow(math.abs(row1-row2),2)+
+    math.pow(math.abs(col1-col2),2)
+    )
+end  
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
@@ -210,10 +223,10 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:isConnected()
+function Tiles:isFullyConnected()
   for i=1,#self.rooms do
     allConnected = true
-    if #self.rooms[i].neighbours < 1 then
+    if #self.rooms[i].neighbours < #self.rooms-1 then
       allConnected = false
       break
     end
@@ -254,13 +267,14 @@ end
 --  * Has unique id
 --  * Keeps track of neighbouring rooms.
 
-Room = { id, neighbours }
+Room = { id, neighbours, center }
 Room.__index = Room
 
 function Room:new(id)
   local room = {}
   room.id = id
   room.neighbours = {}
+  room.center = {r, c}
   
   setmetatable(room, Room)
   
@@ -279,13 +293,19 @@ function Room:hasNeighbours()
   return (#self.neighbours>0)
 end
 
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Room:distanceTo(other)
+  return math.sqrt(
+    math.pow(math.abs(self.center.r-other.center.r),2)+
+    math.pow(math.abs(self.center.c-other.center.c),2)
+    )
+end
 
 -- View example
 m = Tiles:new(50,50)
 m:generateRooms(10)
-allConnected = false
 
-repeat
-  m:generateCorridors()
-until m:isConnected()
+m:generateCorridors()
+
 m:printTiles()
