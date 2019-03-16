@@ -153,14 +153,15 @@ end
 
 function Tiles:generateCorridor(row, col)
   -- Input: coordinates for corridor's start
-  -- Output: coordinated for corridor's end
+  -- Output: coordinates for corridor's end
 
   q = Queue:new()
   startId = self:getTile(row,col).roomId
   start={row,col}
+  
   repeat
     tile = self:getTile(row,col)
-    self:getTile(row, col).visited = true
+    tile.visited = true
     tile.class = "."
     unvisitedNeigh = self:getUnvisitedNeigh(row, col)
     
@@ -178,8 +179,7 @@ function Tiles:generateCorridor(row, col)
         if backTrack == "end" then return "deadEnd" end
         row = backTrack[1]
         col = backTrack[2]
-        -- not stable:
-      until true == false
+      until #self:getUnvisitedNeigh(row, col)>0
     end
     roomId = self:getTile(row,col).roomId
     isStartRoom = (roomId == startId)
@@ -279,7 +279,7 @@ end
 
 -- View example
 m = Tiles:new(40,40)
-m:generateRooms(10)
+m:generateRooms(5)
 allConnected = false
 
 repeat
