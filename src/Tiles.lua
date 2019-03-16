@@ -115,7 +115,7 @@ function Tiles:buildRoom(startR, startC, endR, endC)
   -- paint room onto board 
     id = #self.rooms+1
     room = Room:new(id)
-    room.neighbours[id] = true    -- is it's own neighbour
+    room:addNeighbour(id)    -- is it's own neighbour
     
     r=endR-math.floor((endR-startR)/2)
     c=endC-math.floor((endC-startC)/2)
@@ -147,23 +147,37 @@ function Tiles:generateCorridors()
  room = self.rooms[roomId]
   -- Kruskals
   visited = {}
+  unvisited = table.clone(self.rooms)
+  unvisited[roomId]=nil
+  
   visited[roomId] = true
   repeat
     dist = 1e309    -- ~inf
-    for i=1,#self.rooms do
-      if room:distanceTo(self.rooms[i]) < dist and
-      not room.neighbours[i] then
-        nextRoom = self.rooms[i]
-        dist = room:distanceTo(self.rooms[i])
-      end
+    i = 0
+    repeat
+      i=i+1
+      unvRoom = unvisited[i]
+
+    until (unvRoom)
+
+    if (room:distanceTo(unvRoom) < dist) and
+    (not room:areNeighbours(unvRoom)) then
+      nextRoom = unvRoom
+      dist = room:distanceTo(nextRoom)
     end
+    
     room:addNeighbour(nextRoom.id)
     nextRoom:addNeighbour(room.id)
     self:buildCorridor(room, nextRoom)
-    if not visited[nextRoom.id] then visited[nextRoom.id]=true end
+    if not visited[nextRoom.id] then 
+        visited[nextRoom.id]=true
+        unvisited[i]=nil
+
+      end
     room=nextRoom
-    
-  until #visited == #self.rooms
+    for i=1,#visited do
+    end
+  until tablelength(visited) == #self.rooms
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -202,24 +216,6 @@ function getDist(row1, col1, row2, col2)
     math.pow(math.abs(col1-col2),2)
     )
 end  
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Tiles:getUnvisitedNeigh(row, col)
-  
-  unvisited = {}
-  step = {-1,1}
-  for i = 1,2 do
-
-    if not self:getTile(row+step[i], col).visited then 
-      table.insert(unvisited, {row+step[i], col})
-    end
-    if not self:getTile(row, col+step[i]).visited then 
-      table.insert(unvisited, {row, col+step[i]})
-    end
-  end
-  return unvisited
-end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
@@ -284,13 +280,13 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Room:addNeighbour(n)
-  table.insert(self.neighbours, n)
+  self.neighbours[n]=true
 end
   
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Room:hasNeighbours()
-  return (#self.neighbours>0)
+  return tablelength(self.neighbours)>1
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -300,6 +296,26 @@ function Room:distanceTo(other)
     math.pow(math.abs(self.center.r-other.center.r),2)+
     math.pow(math.abs(self.center.c-other.center.c),2)
     )
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Room:areNeighbours(other)
+  return (self.neighbours[other.id])
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+-- source: https://stackoverflow.com/questions/2705793/how-to-get-number-of-entries-in-a-lua-table
+function tablelength(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end
+
+-- source: http://lua-users.org/wiki/CopyTable
+function table.clone(org)
+  return {table.unpack(org)}
 end
 
 -- View example
