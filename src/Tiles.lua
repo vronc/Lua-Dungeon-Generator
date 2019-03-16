@@ -1,7 +1,10 @@
 require "Queue"
 
 seed = os.time()
-seed = 1552676386
+--seed = 1552689734
+--seed=1552676386
+--seed=1552692988     --gets stuck
+--seed = 1552693161
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -65,7 +68,7 @@ function Tiles:printTiles ()
       row=""
       for j=0,self.width+1 do
         row=row..self.matrix[i][j].class.." "
-        -- row=row..self.matrix[i][j].ids.." "    -- for exposing room-ids
+        --row=row..self.matrix[i][j].roomId.." "    -- for exposing room-ids
       end
       print(row)
     end
@@ -138,11 +141,12 @@ function Tiles:generateCorridors()
  corridors = 0
   repeat
     endRow, endCol = self:generateCorridor(row, col)
+    if endRow == "deadEnd" then break end
     row = endRow
     col = endCol
     corridors = corridors +1
   
-  until corridors == 5
+  until corridors == 10
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -150,13 +154,10 @@ end
 function Tiles:generateCorridor(row, col)
   -- Input: coordinates for corridor's start
   -- Output: coordinated for corridor's end
-  
-  
-  -- TO BE DONE: implement backtracking
+
   q = Queue:new()
-  Queue.pushleft(q, {row,col})
-  startTile = self:getTile(row,col)
-  
+  startId = self:getTile(row,col).roomId
+  start={row,col}
   repeat
     tile = self:getTile(row,col)
     self:getTile(row, col).visited = true
@@ -166,18 +167,27 @@ function Tiles:generateCorridor(row, col)
     if #unvisitedNeigh > 0 then
       n = math.random(1,#unvisitedNeigh)
       neigh = unvisitedNeigh[n]
-      
       Queue.pushleft(q, neigh)
       row = neigh[1]
       col = neigh[2]
     else
       tile.class = " "
-      backTrack = Queue.popleft(q)
-      row = backTrack[1]
-      col = backTrack[2]
+
+      repeat
+        backTrack = Queue.popleft(q)
+        if backTrack == "end" then return "deadEnd" end
+        row = backTrack[1]
+        col = backTrack[2]
+        -- not stable:
+      until true == false
     end
-    isStartRoom = (self:getTile(row,col).roomId == startTile.roomId)
+    roomId = self:getTile(row,col).roomId
+    isStartRoom = (roomId == startId)
   until (self:isRoom(row, col) and not isStartRoom)
+  
+  print(roomId, startId)
+  self.rooms[roomId]:addNeighbour(startId)
+  self.rooms[startId]:addNeighbour(roomId)
   return row, col
 end
 
@@ -197,6 +207,19 @@ function Tiles:getUnvisitedNeigh(row, col)
     end
   end
   return unvisited
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:isConnected()
+  for i=1,#self.rooms do
+    allConnected = true
+    if #self.rooms[i].neighbours < 1 then
+      allConnected = false
+      break
+    end
+  end
+  return allConnected
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -250,12 +273,17 @@ end
 function Room:addNeighbour(n)
   table.insert(self.neighbours, n)
 end
-
+  
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 
 -- View example
 m = Tiles:new(40,40)
 m:generateRooms(10)
-m:generateCorridors()
+allConnected = false
+
+repeat
+  m:generateCorridors()
+  m:printTiles()
+until m:isConnected()
 m:printTiles()
