@@ -63,7 +63,7 @@ function Tiles:printTiles ()
     for i=0,self.height+1 do
       local row=""
       for j=0,self.width+1 do
-        row=row..self.matrix[i][j].class.." "
+        row=row..self.matrix[i][j].symbol.." "
         --row=row..self.matrix[i][j].roomId.." "    -- for exposing room-ids
       end
       print(row)
@@ -104,7 +104,7 @@ end
 function Tiles:generateRoom()
   -- Will randomly place rooms across tiles (no overlapping)
   minRoomSize = 3
-  maxRoomSize = 10 
+  maxRoomSize = 15
   startRow = math.random(1, self.height-maxRoomSize)
   startCol = math.random(1, self.width-maxRoomSize)
   
@@ -141,7 +141,7 @@ function Tiles:buildRoom(startR, startC, endR, endC)
       for j=startC, endC do
         tile = self:getTile(i,j)
         tile.roomId = id
-        tile.class = "."      -- floor tile
+        tile.symbol = "."      -- floor tile
       end
     end
     
@@ -203,7 +203,7 @@ function Tiles:buildCorridor(sRoom, eRoom)
   
   dist = getDist(row, col, erow, ecol)
   repeat
-    self:getTile(row, col).class = "."
+    self:getTile(row, col).symbol = "."
 
     if getDist(row+1, col, erow, ecol) < dist then
       row = row+1
@@ -221,22 +221,46 @@ function Tiles:buildCorridor(sRoom, eRoom)
   until (dist <= 0)
   
 end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
+
+function Tiles:addWalls()
+  -- add walls around generated rooms/corridors
+  
+  for i=1,self.height do
+    for j=1,self.width do
+      if not(self:getTile(i,j).symbol==".") and
+        (self:getTile(i+1,j).symbol=="." or
+         self:getTile(i-1,j).symbol=="." or
+         self:getTile(i,j+1).symbol=="." or
+         self:getTile(i,j-1).symbol=="." or
+         self:getTile(i-1,j-1).symbol=="." or
+         self:getTile(i+1,j+1).symbol=="." or
+         self:getTile(i-1,j+1).symbol=="." or 
+         self:getTile(i+1,j-1).symbol==".") then
+        
+         self:getTile(i,j).symbol="#"
+      end
+    end
+  end
+end  
+
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 -----------------------------------------------------------
 -- - - - - - - - - - - - Tile object - - - - - - - - - - -- 
 -----------------------------------------------------------
 
--- Tile objects have a class (wall, entrance, floor, stairway...)
+-- Tile objects have a symbol (wall, entrance, floor, stairway...)
 -- Unaware of placement in tiles matrix
 -- visited attribute used when carving corridors
 
-Tile = {class, roomId, visited}
+Tile = {symbol, roomId, visited}
 Tile.__index = Tile
 
 function Tile:new(c)
   local tile = {}
-  tile.class = c
+  tile.symbol = c
   tile.roomId = 0
   tile.visited = false
   
@@ -329,8 +353,7 @@ end
 
 -- View example
 m = Tiles:new(50,50)
-m:generateRooms(10)
-
+m:generateRooms(15)
 m:generateCorridors()
-
+m:addWalls()
 m:printTiles()
