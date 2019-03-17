@@ -226,7 +226,8 @@ end
 
 function Tiles:addWalls()
   -- add walls around generated rooms/corridors
-  veinSpawnRate = 0.1
+  veinSpawnRate = 0.02
+  soilSpawnRate = 0.1
   for i=1,self.height do
     for j=1,self.width do
       if not(self:getTile(i,j).symbol==".") and
@@ -240,11 +241,14 @@ function Tiles:addWalls()
              self:getTile(i+1,j-1).symbol==".") then
         
         if math.random() <= veinSpawnRate then
+          self:getTile(i,j).symbol="*"
+          
+        elseif math.random() <= soilSpawnRate then
           self:getTile(i,j).symbol="%"
-          veinSpawnRate = 0.8
+          soilspawnRate = 0.7
         else
           self:getTile(i,j).symbol="#"
-          veinSpawnRate = 0.1
+          soilSpawnRate = 0.1
         end
       end
     end
@@ -254,7 +258,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:decorateRooms()
-  -- adds staircases
+  -- add staircases, 
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
