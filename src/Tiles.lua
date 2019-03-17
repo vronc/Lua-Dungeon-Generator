@@ -166,7 +166,7 @@ function Tiles:generateCorridors()
   visited = {}
   unvisited = table.clone(self.rooms)
   unvisited[roomId]=false
-  visited[roomId] = true
+  visited[roomId] = room
   repeat
     dist = 1e309    -- ~inf
     
@@ -174,21 +174,24 @@ function Tiles:generateCorridors()
     i = 0
     repeat
       i=i+1
-      unvRoom = unvisited[i]
-    until (unvRoom)
+      nextRoom = unvisited[i]
+    until (nextRoom)
 
-    -- Determining if choosen room is closer than previous choice
-    if (room:distanceTo(unvRoom) < dist) then
-      nextRoom = unvRoom
-      dist = room:distanceTo(nextRoom)
-      room:addNeighbour(nextRoom)
-      nextRoom:addNeighbour(room)
-      self:buildCorridor(room, nextRoom)
-      visited[nextRoom.id]=true
-      unvisited[i]=false
-      room=nextRoom
+    for i=1,#visited do
+      room = visited[i]
+      if not (room==nil) then
+      -- Determining if choosen room is closer than previous choice
+        if (room:distanceTo(nextRoom) < dist) then
+          dist = room:distanceTo(nextRoom)
+        end
+      end
     end
-
+    room:addNeighbour(nextRoom)
+    nextRoom:addNeighbour(room)
+    self:buildCorridor(room, nextRoom)
+    visited[nextRoom.id]=nextRoom
+    unvisited[i]=false
+      
   until tablelength(visited) == #self.rooms
 end
 
