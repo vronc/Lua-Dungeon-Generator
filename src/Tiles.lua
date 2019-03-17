@@ -26,6 +26,8 @@ function Tiles:new(height, width)
   
   -- Will hold all rooms, index is ID 
   tiles.rooms = {}
+  -- Will hold tiles registered as room entrances
+  tiles.entrances = {}
   
   setmetatable(tiles, Tiles)
 
@@ -178,7 +180,6 @@ function Tiles:generateCorridors()
         end
       end
     end
-    -- Extracting chosen unvisited from unvisited table
     endRoom = table.remove(unvisited, endIndex)
     self:buildCorridor(startRoom, endRoom)
     table.insert(visited, endRoom)
@@ -195,60 +196,100 @@ function Tiles:buildCorridor(sRoom, eRoom)
   local ecol = eRoom.center.c
   
   dist = getDist(row, col, erow, ecol)
+  nrow=row
+  ncol=col
   repeat
-    self:getTile(row, col).symbol = "."
+    row = nrow
+    col = ncol
+    self:getTile(nrow, ncol).symbol = "."
 
-    if getDist(row+1, col, erow, ecol) < dist then
-      row = row+1
-      dist = getDist(row, col, erow, ecol)
-    elseif getDist(row-1, col, erow, ecol) < dist then
-      row = row-1
-      dist = getDist(row, col, erow, ecol)
-    elseif getDist(row, col+1, erow, ecol) < dist then
-      col=col+1
-      dist = getDist(row, col, erow, ecol)
-    elseif getDist(row, col-1, erow, ecol) < dist then
-      col=col-1
-      dist = getDist(row, col, erow, ecol)
+    if getDist(nrow+1, ncol, erow, ecol) < dist then
+      nrow = row+1
+      dist = getDist(nrow, ncol, erow, ecol)
+    elseif getDist(nrow-1, ncol, erow, ecol) < dist then
+      nrow = row-1
+      dist = getDist(nrow, ncol, erow, ecol)
+    elseif getDist(nrow, ncol+1, erow, ecol) < dist then
+      ncol=col+1
+      dist = getDist(nrow, ncol, erow, ecol)
+    elseif getDist(nrow, ncol-1, erow, ecol) < dist then
+      ncol=col-1
+      dist = getDist(nrow, ncol, erow, ecol)
     end
-  until (self:getTile(row, col).roomId == eRoom.id)
+  until (self:getTile(nrow, ncol).roomId == eRoom.id)
   
+  table.insert(self.entrances, self:getTile(row,col))
+  
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
+
+function Tiles:addDoors()
+  -- Adds open or closed door randomly to entrance tiles
+  
+  for i=1,#self.entrances do
+    if math.random() > 0.5 then
+      self.entrances[i].symbol = "+"
+    else
+      self.entrances[i].symbol = "'"
+    end
+  end
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Tiles:addWalls()
   -- add walls around generated rooms/corridors
-  
+  -- Places wall at given coordinate. Could either place
+  -- wall "#", soil "%" or mineral vein "*"
+
   veinSpawnRate = 0.02
   soilSpawnRate = 0.1
+  
   for i=1,self.height do
     for j=1,self.width do
-      if not(self:getTile(i,j).symbol==".") and
-            (self:getTile(i+1,j).symbol=="." or
-             self:getTile(i-1,j).symbol=="." or
-             self:getTile(i,j+1).symbol=="." or
-             self:getTile(i,j-1).symbol=="." or
-             self:getTile(i-1,j-1).symbol=="." or
-             self:getTile(i+1,j+1).symbol=="." or
-             self:getTile(i-1,j+1).symbol=="." or 
-             self:getTile(i+1,j-1).symbol==".") then
-        
-        if math.random() <= veinSpawnRate then
-          self:getTile(i,j).symbol="*"
+
+      adj=self:getAdjacent(i,j)
+      for k=1,#adj do
+        if adj[k].symbol == "." and 
+           not(self:getTile(i,j).symbol==".") then
           
-        elseif math.random() <= soilSpawnRate then
-          self:getTile(i,j).symbol="%"
-          soilspawnRate = 0.7
-        else
-          self:getTile(i,j).symbol="#"
-          soilSpawnRate = 0.1
+          tile = self:getTile(i,j)
+
+          if math.random() <= veinSpawnRate then
+            tile.symbol="*"
+            elseif math.random() <= soilSpawnRate then
+            tile.symbol="%"
+            soilspawnRate = 0.7     -- for clustering
+            else
+            tile.symbol="#"
+            soilSpawnRate = 0.1
+          end
+          break
         end
       end
+
     end
   end
 end  
 
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:getAdjacent(row, col)
+  -- returns table containing all adjacent tiles to given position.
+  
+  result = {}
+  for dx =-1,1 do
+    for dy=-1,1 do 
+      if (not (dx == 0 and dy == 0)) then
+        table.insert(result, self:getTile(row+dy,col+dx))
+      end
+    end  
+  end
+  for i=1,#result do
+  end
+  return result
+end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:addStaircases()
