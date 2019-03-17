@@ -1,5 +1,5 @@
 seed = os.time()
---seed=1552740241
+seed=1552787852
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -174,20 +174,17 @@ function Tiles:generateCorridors()
     until (unvRoom)
 
     -- Determining if choosen room is closer than previous choice
-    -- can be removed for extra cycles: (not room:areNeighbours(unvRoom)) 
-    if (room:distanceTo(unvRoom) < dist) and
-    (not room:areNeighbours(unvRoom)) then
+    if (room:distanceTo(unvRoom) < dist) then
       nextRoom = unvRoom
       dist = room:distanceTo(nextRoom)
+      room:addNeighbour(nextRoom.id)
+      nextRoom:addNeighbour(room.id)
+      self:buildCorridor(room, nextRoom)
+      visited[nextRoom.id]=true
+      unvisited[i]=false
+      room=nextRoom
     end
     
-    room:addNeighbour(nextRoom.id)
-    nextRoom:addNeighbour(room.id)
-    self:buildCorridor(room, nextRoom)
-    visited[nextRoom.id]=true
-    unvisited[i]=false
-    
-    room=nextRoom
     for i=1,#visited do
     end
   until tablelength(visited) == #self.rooms
@@ -226,6 +223,7 @@ end
 
 function Tiles:addWalls()
   -- add walls around generated rooms/corridors
+  
   veinSpawnRate = 0.02
   soilSpawnRate = 0.1
   for i=1,self.height do
@@ -258,7 +256,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:decorateRooms()
-  -- add staircases, 
+  -- add staircases etc
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
