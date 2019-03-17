@@ -103,6 +103,7 @@ end
   
 function Tiles:generateRoom()
   -- Will randomly place rooms across tiles (no overlapping)
+  
   minRoomSize = 3
   maxRoomSize = 15
   startRow = math.random(1, self.height-maxRoomSize)
@@ -110,8 +111,7 @@ function Tiles:generateRoom()
   
   height = math.random(minRoomSize, maxRoomSize)
   width = math.random(minRoomSize, maxRoomSize)
-  
-  ok = true
+
   for i=startRow-1, startRow+height+1 do
     for j=startCol-1, startCol+width+1 do
       
@@ -131,7 +131,7 @@ function Tiles:buildRoom(startR, startC, endR, endC)
   
     id = #self.rooms+1
     room = Room:new(id)
-    room:addNeighbour(id)    -- is it's own neighbour
+    room:addNeighbour(room)    -- rooms are their own neighbours
     
     r=endR-math.floor((endR-startR)/2)
     c=endC-math.floor((endC-startC)/2)
@@ -177,8 +177,8 @@ function Tiles:generateCorridors()
     if (room:distanceTo(unvRoom) < dist) then
       nextRoom = unvRoom
       dist = room:distanceTo(nextRoom)
-      room:addNeighbour(nextRoom.id)
-      nextRoom:addNeighbour(room.id)
+      room:addNeighbour(nextRoom)
+      nextRoom:addNeighbour(room)
       self:buildCorridor(room, nextRoom)
       visited[nextRoom.id]=true
       unvisited[i]=false
@@ -255,10 +255,27 @@ end
 
 function Tiles:decorateRooms()
   -- add staircases etc
+  
+  local maxStaircases = math.ceil(#self.rooms-(#self.rooms/2))
+  staircases = math.random(1,maxStaircases)
+
+  repeat
+    local room = self:getRandRoom()
+    if not room.hasStaircase then
+      self:placeStaircase(room)
+      staircases = staircases-1
+    end 
+  until staircases==0
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+function Tiles:placeStaircase(room)
+  
+  room.hasStaircase = true
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 -----------------------------------------------------------
 -- - - - - - - - - - - - Tile object - - - - - - - - - - -- 
 -----------------------------------------------------------
@@ -291,7 +308,7 @@ end
 --  * Has unique id
 --  * Keeps track of neighbouring rooms.
 
-Room = { id, neighbours, center }
+Room = { id, neighbours, center, hasStaircase }
 Room.__index = Room
 
 function Room:new(id)
@@ -299,6 +316,7 @@ function Room:new(id)
   room.id = id
   room.neighbours = {}
   room.center = {r, c}
+  room.hasStaircase = false
   
   setmetatable(room, Room)
   
@@ -308,7 +326,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Room:addNeighbour(n)
-  self.neighbours[n]=true
+  self.neighbours[n.id]=true
 end
   
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -330,9 +348,8 @@ end
 
 function Room:areNeighbours(other)
   return (self.neighbours[other.id])
-end
 
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+end
 
 
 -----------------------------------------------------------
@@ -353,6 +370,8 @@ end
 function table.clone(org)
   return {table.unpack(org)}
 end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function getDist(row1, col1, row2, col2)
   return math.sqrt(
