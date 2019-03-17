@@ -253,7 +253,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:decorateRooms()
+function Tiles:addStaircases()
   -- add staircases etc
   
   local maxStaircases = math.ceil(#self.rooms-(#self.rooms/2))
@@ -271,8 +271,24 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:placeStaircase(room)
-  
   room.hasStaircase = true
+  dir={ r=math.random(-1,1), c=math.random(-1,1) }
+  steps = math.random(0,7)
+  row = room.center.r
+  col = room.center.c
+  
+  for i=1,steps do
+    nrow=row+dir.r
+    ncol=col+dir.c
+    if not (self:getTile(nrow, ncol).roomId == room.id) then
+      break
+    else
+      row=nrow
+      col=ncol
+    end
+  end
+  print(row,col)
+  self:getTile(row, col).symbol="<"
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -325,8 +341,8 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Room:addNeighbour(n)
-  self.neighbours[n.id]=true
+function Room:addNeighbour(other)
+  self.neighbours[other.id]=true
 end
   
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -337,20 +353,19 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+function Room:areNeighbours(other)
+  return (self.neighbours[other.id])
+
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
 function Room:distanceTo(other)
   return math.sqrt(
     math.pow(math.abs(self.center.r-other.center.r),2)+
     math.pow(math.abs(self.center.c-other.center.c),2)
     )
 end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Room:areNeighbours(other)
-  return (self.neighbours[other.id])
-
-end
-
 
 -----------------------------------------------------------
 -- - - - - - - - - - - Global functions - - - - - - - - - -
@@ -387,4 +402,5 @@ m = Tiles:new(50,50)
 m:generateRooms(15)
 m:generateCorridors()
 m:addWalls()
+m:addStaircases()
 m:printTiles()
