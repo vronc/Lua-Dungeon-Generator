@@ -1,9 +1,10 @@
 require "helpFunctions"
 require "Tile"
 require "Room"
+require "Queue"
 
 seed = os.time()
---seed=1552787852
+--seed=1552848835
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -157,42 +158,33 @@ function Tiles:generateCorridors()
   if #self.rooms < 1 then error("Can't generate corridors, no rooms exists")
   elseif #self.rooms == 1 then return end
   
-  -- Choosing root room
-  room = self:getRandRoom()
-  roomId = room.id
+  -- ### PRIM'S ALGORITHM (modified) ### --
   
-  -- ### KRUSKALS (ish) ### --
+  visited={}
+  unvisited = Queue:new()
+  for i=1,#self.rooms do
+    Queue.pushright(unvisited, self.rooms[i])
+  end
   
-  visited = {}
-  unvisited = table.clone(self.rooms)
-  unvisited[roomId]=false
-  visited[roomId] = room
+  unvisitedRoom=Queue.popleft(unvisited)
+  table.insert(visited, unvisitedRoom)
+  
   repeat
+    unvisitedRoom=Queue.popleft(unvisited)
     dist = 1e309    -- ~inf
-    
-    -- Choosing unvisited room
-    i = 0
-    repeat
-      i=i+1
-      nextRoom = unvisited[i]
-    until (nextRoom)
-
     for i=1,#visited do
-      room = visited[i]
-      if not (room==nil) then
-      -- Determining if choosen room is closer than previous choice
-        if (room:distanceTo(nextRoom) < dist) then
-          dist = room:distanceTo(nextRoom)
-        end
+      visitedRoom=visited[i]
+    -- Determining if choosen room is closer than previous choice
+      if (unvisitedRoom:distanceTo(visitedRoom) < dist) then
+        dist = unvisitedRoom:distanceTo(visitedRoom)
+        closestRoom=visitedRoom
       end
     end
-    room:addNeighbour(nextRoom)
-    nextRoom:addNeighbour(room)
-    self:buildCorridor(room, nextRoom)
-    visited[nextRoom.id]=nextRoom
-    unvisited[i]=false
-      
-  until tablelength(visited) == #self.rooms
+    print(closestRoom.id, visitedRoom.id)
+    self:buildCorridor(unvisitedRoom, closestRoom)
+    table.insert(visited, unvisitedRoom)
+
+  until #visited == #self.rooms
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
