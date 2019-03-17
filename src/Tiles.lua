@@ -1,3 +1,7 @@
+require "helpFunctions"
+require "Tile"
+require "Room"
+
 seed = os.time()
 --seed=1552787852
 math.randomseed(seed)
@@ -287,120 +291,7 @@ function Tiles:placeStaircase(room)
       col=ncol
     end
   end
-  print(row,col)
   self:getTile(row, col).symbol="<"
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
------------------------------------------------------------
--- - - - - - - - - - - - Tile object - - - - - - - - - - -- 
------------------------------------------------------------
-
--- Tile objects have a symbol (wall, entrance, floor, stairway...)
--- Unaware of placement in tiles matrix
--- visited attribute used when carving corridors
-
-Tile = {symbol, roomId, visited}
-Tile.__index = Tile
-
-function Tile:new(c)
-  local tile = {}
-  tile.symbol = c
-  tile.roomId = 0
-  tile.visited = false
-  
-  setmetatable(tile, Tile)
-  
-  return tile
-  
-end
-
------------------------------------------------------------
--- - - - - - - - - - - - Room object - - - - - - - - - - -- 
------------------------------------------------------------
-
--- Room is a Node-like object.
-
---  * Has unique id
---  * Keeps track of neighbouring rooms.
-
-Room = { id, neighbours, center, hasStaircase }
-Room.__index = Room
-
-function Room:new(id)
-  local room = {}
-  room.id = id
-  room.neighbours = {}
-  room.center = {r, c}
-  room.hasStaircase = false
-  
-  setmetatable(room, Room)
-  
-  return room
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Room:addNeighbour(other)
-  self.neighbours[other.id]=true
-end
-  
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Room:hasNeighbours()
-  return tablelength(self.neighbours)>1
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Room:areNeighbours(other)
-  return (self.neighbours[other.id])
-
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Room:distanceTo(other)
-  return math.sqrt(
-    math.pow(math.abs(self.center.r-other.center.r),2)+
-    math.pow(math.abs(self.center.c-other.center.c),2)
-    )
-end
-
------------------------------------------------------------
--- - - - - - - - - - - Global functions - - - - - - - - - -
------------------------------------------------------------
-
-
--- source: https://stackoverflow.com/questions/2705793/how-to-get-number-of-entries-in-a-lua-table
-function tablelength(T)
-  local count = 0
-  for _ in pairs(T) do count = count + 1 end
-  return count
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
--- source: http://lua-users.org/wiki/CopyTable
-function table.clone(org)
-  return {table.unpack(org)}
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function getDist(row1, col1, row2, col2)
-  return math.sqrt(
-    math.pow(math.abs(row1-row2),2)+
-    math.pow(math.abs(col1-col2),2)
-    )
-end  
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
--- View example
-m = Tiles:new(50,50)
-m:generateRooms(15)
-m:generateCorridors()
-m:addWalls()
-m:addStaircases()
-m:printTiles()
