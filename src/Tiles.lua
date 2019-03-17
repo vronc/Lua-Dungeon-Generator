@@ -158,31 +158,30 @@ function Tiles:generateCorridors()
   if #self.rooms < 1 then error("Can't generate corridors, no rooms exists")
   elseif #self.rooms == 1 then return end
   
-  -- ### PRIM'S ALGORITHM (modified) ### --
+  -- ### PRIM'S ALGORITHM ### --
+
+  local visited={}
+  local unvisited = table.clone(self.rooms)
   
-  visited={}
-  unvisited = Queue:new()
-  for i=1,#self.rooms do
-    Queue.pushright(unvisited, self.rooms[i])
-  end
-  
-  unvisitedRoom=Queue.popleft(unvisited)
-  table.insert(visited, unvisitedRoom)
-  
+  local root=table.remove(unvisited, 1)
+  table.insert(visited, root)
   repeat
-    unvisitedRoom=Queue.popleft(unvisited)
-    dist = 1e309    -- ~inf
+    local dist = 1e309    -- ~inf
     for i=1,#visited do
-      visitedRoom=visited[i]
-    -- Determining if choosen room is closer than previous choice
-      if (unvisitedRoom:distanceTo(visitedRoom) < dist) then
-        dist = unvisitedRoom:distanceTo(visitedRoom)
-        closestRoom=visitedRoom
+      for j=1,#unvisited do
+
+        if (unvisited[j]:distanceTo(visited[i]) < dist) then
+          dist = unvisited[j]:distanceTo(visited[i])
+          startRoom=visited[i]
+          endIndex=j
+          
+        end
       end
     end
-    print(closestRoom.id, visitedRoom.id)
-    self:buildCorridor(unvisitedRoom, closestRoom)
-    table.insert(visited, unvisitedRoom)
+    -- Extracting chosen unvisited from unvisited table
+    endRoom = table.remove(unvisited, endIndex)
+    self:buildCorridor(startRoom, endRoom)
+    table.insert(visited, endRoom)
 
   until #visited == #self.rooms
 end
