@@ -211,7 +211,7 @@ function Tiles:buildCorridor(sRoom, eRoom)
       col=col-1
       dist = getDist(row, col, erow, ecol)
     end
-  until (dist <= 0)
+  until (self:getTile(row, col).roomId == eRoom.id)
   
 end
 
