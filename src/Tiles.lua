@@ -1,5 +1,5 @@
 seed = os.time()
-seed=1552787852
+--seed=1552787852
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -184,9 +184,7 @@ function Tiles:generateCorridors()
       unvisited[i]=false
       room=nextRoom
     end
-    
-    for i=1,#visited do
-    end
+
   until tablelength(visited) == #self.rooms
 end
 
