@@ -204,23 +204,29 @@ function Tiles:buildCorridor(sRoom, eRoom)
   repeat
     row, col = srow, scol
     adj = self:getAdjacentPos(srow, scol)
+
     for i=1,#adj do
-      srow, scol = adj[i].r, adj[i].c
-      if (getDist(srow, scol, erow, ecol) < dist) and
+      adjr, adjc = adj[i].r, adj[i].c
+      if (getDist(adjr, adjc, erow, ecol) < dist) and
           i%2==0        -- not picking diagonals
       then
+        srow, scol = adjr, adjc
         dist = getDist(srow, scol, erow, ecol)
-        break           -- remove for more diagonal (shorter) walks!
+        --break           -- remove for more diagonal (shorter) walks!
       end
+      self:buildCorridorTile(row, col, adj)
     end
-    self:buildCorridorTile(srow, scol, adj)
   until (self:getTile(srow, scol).roomId == eRoom.id)
+  
   if self:isValidEntrance(row, col) then 
     table.insert(self.entrances, self:getTile(row,col)) 
   end
 end
 
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
 function Tiles:buildCorridorTile(row, col, adj)
+  print(row,col)
   self:getTile(row, col).symbol = "."
   for i=1,#adj do
     adjR = adj[i].r
