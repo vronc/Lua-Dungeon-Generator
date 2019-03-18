@@ -226,7 +226,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:buildCorridorTile(row, col, adj)
-  print(row,col)
+  
   self:getTile(row, col).symbol = "."
   for i=1,#adj do
     adjR = adj[i].r
@@ -236,6 +236,7 @@ function Tiles:buildCorridorTile(row, col, adj)
     end
   end
 end
+
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Tiles:isValidEntrance(row, col)
