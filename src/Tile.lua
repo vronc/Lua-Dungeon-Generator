@@ -26,3 +26,11 @@ function Tile:new(c)
   return tile
   
 end
+
+function Tile:isWall() 
+  return (
+    self.symbol == "#" or
+    self.symbol == "%" or
+    self.symbol == "*"
+    )
+end

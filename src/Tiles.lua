@@ -4,7 +4,7 @@ require "Room"
 require "Queue"
 
 seed = os.time()
---seed=1552848835
+--seed=1552867281
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -190,38 +190,44 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
 function Tiles:buildCorridor(sRoom, eRoom)
-  local row = sRoom.center.r
-  local col = sRoom.center.c
+  local srow = sRoom.center.r
+  local scol = sRoom.center.c
   local erow = eRoom.center.r
   local ecol = eRoom.center.c
   
-  dist = getDist(row, col, erow, ecol)
-  nrow=row
-  ncol=col
+  dist = getDist(srow, scol, erow, ecol)
+  
   repeat
-    row = nrow
-    col = ncol
-    self:getTile(nrow, ncol).symbol = "."
+    row = srow
+    col = scol
+    self:getTile(row, col).symbol = "."
+    adj = self:getAdjacentPos(srow, scol)
 
-    if getDist(nrow+1, ncol, erow, ecol) < dist then
-      nrow = row+1
-      dist = getDist(nrow, ncol, erow, ecol)
-    elseif getDist(nrow-1, ncol, erow, ecol) < dist then
-      nrow = row-1
-      dist = getDist(nrow, ncol, erow, ecol)
-    elseif getDist(nrow, ncol+1, erow, ecol) < dist then
-      ncol=col+1
-      dist = getDist(nrow, ncol, erow, ecol)
-    elseif getDist(nrow, ncol-1, erow, ecol) < dist then
-      ncol=col-1
-      dist = getDist(nrow, ncol, erow, ecol)
+    for i=1,#adj do
+      srow = adj[i].r
+      scol = adj[i].c
+      if (getDist(srow, scol, erow, ecol) < dist) and 
+          i%2==0        -- not picking diagonals
+      then
+        dist = getDist(srow, scol, erow, ecol)
+        break           -- remove for more diagonal (shorter) walks!
+      end
     end
-  until (self:getTile(nrow, ncol).roomId == eRoom.id)
+  until (self:getTile(srow, scol).roomId == eRoom.id)
   
-  table.insert(self.entrances, self:getTile(row,col))
-  
+  if self:isValidEntrance(row, col) then 
+    table.insert(self.entrances, self:getTile(row,col)) 
+  end
 end
 
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
+
+function Tiles:isValidEntrance(row, col)
+  return (
+    self:getTile(row+1,col):isWall() and self:getTile(row-1,col):isWall() or
+    self:getTile(row,col+1):isWall() and self:getTile(row,col-1):isWall()
+    )
+end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Tiles:addDoors()
@@ -249,7 +255,7 @@ function Tiles:addWalls()
   for i=1,self.height do
     for j=1,self.width do
 
-      adj=self:getAdjacent(i,j)
+      local adj=self:getAdjacentTiles(i,j)
       for k=1,#adj do
         if adj[k].symbol == "." and 
            not(self:getTile(i,j).symbol==".") then
@@ -275,25 +281,41 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:getAdjacent(row, col)
-  -- returns table containing all adjacent tiles to given position.
+function Tiles:getAdjacentPos(row, col)
+  -- returns table containing all adjacent positions {r,c} to given position
+  -- INCLUDING SELF. to change this:
+  -- add if (not (dx == 0 and dy == 0)) then ... end
   
-  result = {}
+  local result = {}
   for dx =-1,1 do
     for dy=-1,1 do 
-      if (not (dx == 0 and dy == 0)) then
-        table.insert(result, self:getTile(row+dy,col+dx))
-      end
+      table.insert(result, {r=row+dy, c=col+dx})
     end  
   end
   for i=1,#result do
   end
   return result
 end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:getAdjacentTiles(row, col)
+  -- returns table containing all adjacent tiles to given position.
+  
+  local result={}
+  local adj=self:getAdjacentPos(row,col)
+  for i=1,#adj do
+    row = adj[i].r
+    col = adj[i].c
+    table.insert(result, self:getTile(row, col))
+  end
+  return result
+end
+
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:addStaircases()
-  -- add staircases etc
+  -- Adds staircases randomly
   
   local maxStaircases = math.ceil(#self.rooms-(#self.rooms/2))
   staircases = math.random(1,maxStaircases)
