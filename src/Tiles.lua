@@ -4,7 +4,7 @@ require "Room"
 require "Queue"
 
 seed = os.time()
---seed=1552868335
+--seed=1552925360
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -156,7 +156,7 @@ function Tiles:buildRoom(startR, startC, endR, endC)
         tile.symbol = "."      -- floor tile
       end
     end
-    self:addWalls(startR, startC, endR, endC)
+    self:addWalls(startR-1, startC-1, endR+1, endC+1)
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -203,9 +203,7 @@ function Tiles:buildCorridor(sRoom, eRoom)
   
   repeat
     row, col = srow, scol
-    self:getTile(row, col).symbol = "."
     adj = self:getAdjacentPos(srow, scol)
-
     for i=1,#adj do
       srow, scol = adj[i].r, adj[i].c
       if (getDist(srow, scol, erow, ecol) < dist) and
@@ -215,19 +213,29 @@ function Tiles:buildCorridor(sRoom, eRoom)
         break           -- remove for more diagonal (shorter) walks!
       end
     end
+    self:buildCorridorTile(srow, scol, adj)
   until (self:getTile(srow, scol).roomId == eRoom.id)
-  
   if self:isValidEntrance(row, col) then 
     table.insert(self.entrances, self:getTile(row,col)) 
   end
 end
 
+function Tiles:buildCorridorTile(row, col, adj)
+  self:getTile(row, col).symbol = "."
+  for i=1,#adj do
+    adjR = adj[i].r
+    adjC = adj[i].c
+    if self:getTile(adjR, adjC).symbol == " " then 
+      self:placeWall(adjR, adjC)
+    end
+  end
+end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Tiles:isValidEntrance(row, col)
   return (
-    self:getTile(row+1,col):isWall() and self:getTile(row-1,col):isWall() or
-    self:getTile(row,col+1):isWall() and self:getTile(row,col-1):isWall()
+    (self:getTile(row+1,col):isWall() and self:getTile(row-1,col):isWall()) or
+    (self:getTile(row,col+1):isWall() and self:getTile(row,col-1):isWall())
     )
 end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
