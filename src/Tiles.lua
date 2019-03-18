@@ -4,7 +4,7 @@ require "Room"
 require "Queue"
 
 seed = os.time()
---seed=1552867281
+--seed=1552868335
 math.randomseed(seed)
 print("seed: "..seed)
 
@@ -14,7 +14,7 @@ print("seed: "..seed)
 
 -- A Tiles object keep an overview of the Tile objects which are kept in a matrix
 
-Tiles = {height, width, matrix}
+Tiles = {height, width, matrix, rooms, entrances}
 Tiles.__index = Tiles
 
 function Tiles:new(height, width)
@@ -31,6 +31,9 @@ function Tiles:new(height, width)
   
   setmetatable(tiles, Tiles)
 
+  self.rootRoom=nil
+  self.endRoom=nil
+  
   tiles:initMap(height, width)
   return tiles
 end
@@ -85,6 +88,19 @@ function Tiles:getRandRoom()
   return self.rooms[i]
 end
 
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:getRoot()
+  -- return: Room that is root of room tree if such has been generated
+  return self.rootRoom
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:getEnd()
+  -- return: Leaf room added last to tree
+  return self.endRoom
+end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
@@ -166,6 +182,7 @@ function Tiles:generateCorridors()
   local unvisited = table.clone(self.rooms)
   
   local root=table.remove(unvisited, 1)
+  self.rootRoom=root
   table.insert(visited, root)
   repeat
     local dist = 1e309    -- ~inf
@@ -185,28 +202,24 @@ function Tiles:generateCorridors()
     table.insert(visited, endRoom)
 
   until #visited == #self.rooms
+  self.endRoom=endRoom
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
 function Tiles:buildCorridor(sRoom, eRoom)
-  local srow = sRoom.center.r
-  local scol = sRoom.center.c
-  local erow = eRoom.center.r
-  local ecol = eRoom.center.c
-  
+  srow, scol = sRoom.center.r, sRoom.center.c
+  erow, ecol = eRoom.center.r, eRoom.center.c
   dist = getDist(srow, scol, erow, ecol)
   
   repeat
-    row = srow
-    col = scol
+    row, col = srow, scol
     self:getTile(row, col).symbol = "."
     adj = self:getAdjacentPos(srow, scol)
 
     for i=1,#adj do
-      srow = adj[i].r
-      scol = adj[i].c
-      if (getDist(srow, scol, erow, ecol) < dist) and 
+      srow, scol = adj[i].r, adj[i].c
+      if (getDist(srow, scol, erow, ecol) < dist) and
           i%2==0        -- not picking diagonals
       then
         dist = getDist(srow, scol, erow, ecol)
