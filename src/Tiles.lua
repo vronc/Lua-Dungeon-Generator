@@ -31,8 +31,10 @@ function Tiles:new(height, width)
   
   setmetatable(tiles, Tiles)
 
-  self.rootRoom=nil
-  self.endRoom=nil
+  tiles.rootRoom=nil
+  tiles.endRoom=nil
+  tiles.veinSpawnRate = 0.02
+  tiles.soilSpawnRate = 0.1
   
   tiles:initMap(height, width)
   return tiles
@@ -41,29 +43,17 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:initMap(height, width)
-
-  self.matrix[0] = {}
-  wallTile = Tile:new("#")
-  wallTile.visited = true
   
-  -- Create upper and lower bound walls
-  for j=0,width+1 do
-    self.matrix[0][j] = wallTile
-  end
-  self.matrix[height+1] = {}
-  for j=0,width+1 do
-    self.matrix[height+1][j] = wallTile
-  end
-  
-  -- Create left and right bound walls
-  for i=1,height do
-    self.matrix[i] = {}     -- create a new row
-    self.matrix[i][0] = wallTile
-    for j=1,width do
+  -- Create void
+  for i=0,height+1 do
+    self.matrix[i] = {}
+    for j=0,width+1 do
       self.matrix[i][j] = Tile:new(" ")
     end
-    self.matrix[i][width+1] = wallTile
   end
+  
+  self:addWalls(0, 0, height+1, width+1)
+  
 end 
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -156,8 +146,7 @@ function Tiles:buildRoom(startR, startC, endR, endC)
     room = Room:new(id)
     room:addNeighbour(room)    -- rooms are their own neighbours
     
-    r=endR-math.floor((endR-startR)/2)
-    c=endC-math.floor((endC-startC)/2)
+    r,c =endR-math.floor((endR-startR)/2), endC-math.floor((endC-startC)/2)
     room.center = {r=r, c=c}
     table.insert(self.rooms, room)
     for i=startR, endR do
@@ -167,7 +156,7 @@ function Tiles:buildRoom(startR, startC, endR, endC)
         tile.symbol = "."      -- floor tile
       end
     end
-    
+    self:addWalls(startR, startC, endR, endC)
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -257,43 +246,39 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
-function Tiles:addWalls()
-  -- add walls around generated rooms/corridors
-  -- Places wall at given coordinate. Could either place
-  -- wall "#", soil "%" or mineral vein "*"
+function Tiles:addWalls(startR, startC, endR, endC)
 
-  veinSpawnRate = 0.02
-  soilSpawnRate = 0.1
-  
-  for i=1,self.height do
-    for j=1,self.width do
-
-      local adj=self:getAdjacentTiles(i,j)
-      for k=1,#adj do
-        if adj[k].symbol == "." and 
-           not(self:getTile(i,j).symbol==".") then
-          
-          tile = self:getTile(i,j)
-
-          if math.random() <= veinSpawnRate then
-            tile.symbol="*"
-            elseif math.random() <= soilSpawnRate then
-            tile.symbol="%"
-            soilspawnRate = 0.7     -- for clustering
-            else
-            tile.symbol="#"
-            soilSpawnRate = 0.1
-          end
-          break
-        end
-      end
-
-    end
+  -- Create upper and lower bound walls
+  for j=startC,endC do
+    self:placeWall(startR, j)
+    self:placeWall(endR, j)
   end
-end  
+  
+  -- Create left and right bound walls
+  for i=startR,endR do
+    self:placeWall(i, startC)
+    self:placeWall(i, endC)
+  end
+end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+function Tiles:placeWall(r,c)
+  -- Places wall at given coordinate. Could either place
+  -- wall "#", soil "%" or mineral vein "*"
+  
+  tile = self:getTile(r,c)
+  
+  if math.random() <= self.veinSpawnRate then
+    tile.symbol="*"
+    elseif math.random() <= self.soilSpawnRate then
+    tile.symbol="%"
+    self.soilspawnRate = 0.7     -- for clustering
+    else
+    tile.symbol="#"
+    self.soilSpawnRate = 0.1
+  end
+end
 function Tiles:getAdjacentPos(row, col)
   -- returns table containing all adjacent positions {r,c} to given position
   -- INCLUDING SELF. to change this:
