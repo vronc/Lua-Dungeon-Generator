@@ -1,3 +1,5 @@
+local pow = math.pow
+
 ---------------------------------------------------------------------------
 -- - - - - - - - - - - - - - - - Room object - - - - - - - - - - - - - - -- 
 ---------------------------------------------------------------------------
@@ -12,11 +14,12 @@ Room = { id, neighbours, center, hasStaircase }
 Room.__index = Room
 
 function Room:new(id)
-  local room = {}
-  room.id = id
-  room.neighbours = {}
-  room.center = {r, c}
-  room.hasStaircase = false
+  local room = {
+    id=id,
+    neighbours = {},
+    center = {},
+    hasStaircase = false
+    }
   
   setmetatable(room, Room)
   
@@ -48,7 +51,7 @@ function Room:distanceTo(other)
   -- returns distance from self to other room's center.
   
   return math.sqrt(
-    math.pow(math.abs(self.center.r-other.center.r),2)+
-    math.pow(math.abs(self.center.c-other.center.c),2)
+    pow(math.abs(self.center[1]-other.center[1]),2)+
+    pow(math.abs(self.center[2]-other.center[2]),2)
     )
 end

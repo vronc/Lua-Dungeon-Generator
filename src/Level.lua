@@ -2,6 +2,10 @@ require "helpFunctions"
 require "Tile"
 require "Room"
 
+local random = math.random
+local floor = math.floor
+local ceil = math.ceil
+
 ---------------------------------------------------------------------------
 -- - - - - - - - - - - - - - - - Level object - - - - - - - - - - - - - - - 
 ---------------------------------------------------------------------------
@@ -14,26 +18,21 @@ Level.__index = Level
 
 function Level:new(height, width)
   if height < 10 or width < 10 then error("Level must have height>=10, width>=10") end
-  local level = {}
-  level.height = height
-  level.width = width
-  level.matrix = {}
-  level.maxRoomSize = 15
-  level.maxRooms = 15
-  
-  -- Will hold all rooms, index is ID
-  level.rooms = {}
-  -- Will hold tiles with doors
-  level.entrances = {}
-  level.staircases = {}
+  local level = { height=height, 
+                width=width, 
+                matrix={}, 
+                maxRoomSize = 15,
+                maxRooms = 15,
+                rooms = {},
+                entrances = {},
+                staircases = {},
+                rootRoom=nil, 
+                endRoom=nil,
+                veinSpawnRate = 0.02,
+                soilSpawnRate = 0.05
+                }
   
   setmetatable(level, Level)
-
-  level.rootRoom=nil
-  level.endRoom=nil
-  level.veinSpawnRate = 0.02
-  level.soilSpawnRate = 0.05
-  
   level:generateLevel()
   
   return level
@@ -49,8 +48,8 @@ function Level:generateLevel()
   self:addStaircases()
   self:addDoors()
   
-  rootr, rootc =self:getRoot().center.r, self:getRoot().center.c
-  endr, endc =self:getEnd().center.r, self:getEnd().center.c
+  local rootr, rootc =self:getRoot().center[1], self:getRoot().center[2]
+  local endr, endc =self:getEnd().center[1], self:getEnd().center[2]
   self:getTile(rootr,rootc).symbol="@"
   self:getTile(endr,endc).symbol="B"
 end
@@ -58,7 +57,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:initMap(height, width)
-  
+
   -- Create void
   for i=-1,height+1 do
     self.matrix[i] = {}
@@ -89,7 +88,7 @@ function Level:printLevel ()
 
 function Level:setLevelNr(nr)
   local s = "  LEVEL  "..nr.."  "
-  local start = math.floor(self.width/2-string.len(s)/2)
+  local start = floor(self.width/2-string.len(s)/2)
 
   for i=1,string.len(s) do
     --print(s[i])
@@ -102,7 +101,7 @@ end
 
 function Level:getRandRoom()
   -- return: Random room
-  local i = math.random(1,#self.rooms)
+  local i = random(1,#self.rooms)
   return self.rooms[i]
 end
 
@@ -149,7 +148,7 @@ function Level:getAdjacentPos(row, col)
   local result = {}
   for dx =-1,1 do
     for dy=-1,1 do 
-      table.insert(result, {r=row+dy, c=col+dx})
+      result[#result+1]={ row+dy, col+dx }
     end  
   end
   for i=1,#result do
@@ -166,9 +165,9 @@ function Level:getAdjacentTiles(row, col)
   local result={}
   local adj=self:getAdjacentPos(row,col)
   for i=1,#adj do
-    row = adj[i].r
-    col = adj[i].c
-    table.insert(result, self:getTile(row, col))
+    local row = adj[i][1]
+    local col = adj[i][2]
+    result[#result+1] = self:getTile(row, col)
   end
   return result
 end
@@ -185,12 +184,12 @@ end
   
 function Level:generateRoom()
   -- Will randomly place rooms across tiles (no overlapping)
-  minRoomSize = 3
-  startRow = math.random(1, self.height-self.maxRoomSize)
-  startCol = math.random(1, self.width-self.maxRoomSize)
+  local minRoomSize = 3
+  local startRow = random(1, self.height-self.maxRoomSize)
+  local startCol = random(1, self.width-self.maxRoomSize)
   
-  height = math.random(minRoomSize, self.maxRoomSize)
-  width = math.random(minRoomSize, self.maxRoomSize)
+  local height = random(minRoomSize, self.maxRoomSize)
+  local width = random(minRoomSize, self.maxRoomSize)
 
   for i=startRow-1, startRow+height+1 do
     for j=startCol-1, startCol+width+1 do
@@ -208,21 +207,21 @@ end
 
 function Level:buildRoom(startR, startC, endR, endC)
   -- paint room onto board 
+
+  local id = #self.rooms+1
+  local room = Room:new(id)
+  room:addNeighbour(room)    -- rooms are their own neighbours
   
-    id = #self.rooms+1
-    room = Room:new(id)
-    room:addNeighbour(room)    -- rooms are their own neighbours
-    
-    r,c =endR-math.floor((endR-startR)/2), endC-math.floor((endC-startC)/2)
-    room.center = {r=r, c=c}
-    table.insert(self.rooms, room)
-    for i=startR, endR do
-      for j=startC, endC do
-        tile = self:getTile(i,j)
-        tile.roomId, tile.symbol = id, "."    -- floor tile
-      end
+  local r,c =endR-floor((endR-startR)/2), endC-floor((endC-startC)/2)
+  room.center = {r, c}
+  self.rooms[#self.rooms+1] = room
+  for i=startR, endR do
+    for j=startC, endC do
+      local tile = self:getTile(i,j)
+      tile.roomId, tile.symbol = id, "."    -- floor tile
     end
-    self:addWalls(startR-1, startC-1, endR+1, endC+1)
+  end
+  self:addWalls(startR-1, startC-1, endR+1, endC+1)
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -238,7 +237,7 @@ function Level:generateCorridors()
   
   local root=table.remove(unvisited, 1)
   self.rootRoom=root
-  table.insert(visited, root)
+  visited[#visited+1] = root
   repeat
     local dist = 1e309    -- ~inf
     for i=1,#visited do
@@ -248,13 +247,12 @@ function Level:generateCorridors()
           dist = unvisited[j]:distanceTo(visited[i])
           startRoom=visited[i]
           endIndex=j
-          
         end
       end
     end
     endRoom = table.remove(unvisited, endIndex)
     self:buildCorridor(startRoom, endRoom)
-    table.insert(visited, endRoom)
+    visited[#visited+1] = endRoom
 
   until #visited == #self.rooms
   self.endRoom=endRoom
@@ -263,16 +261,16 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
 function Level:buildCorridor(sRoom, eRoom)
-  srow, scol = sRoom.center.r, sRoom.center.c
-  erow, ecol = eRoom.center.r, eRoom.center.c
+  local srow, scol = sRoom.center[1], sRoom.center[2]
+  local erow, ecol = eRoom.center[1], eRoom.center[2]
   dist = getDist(srow, scol, erow, ecol)
   
   repeat
     row, col = srow, scol
-    adj = self:getAdjacentPos(srow, scol)
+    local adj = self:getAdjacentPos(srow, scol)
 
     for i=1,#adj do
-      adjr, adjc = adj[i].r, adj[i].c
+      local adjr, adjc = adj[i][1], adj[i][2]
       if (getDist(adjr, adjc, erow, ecol) < dist) and
           i%2==0        -- not picking diagonals
       then
@@ -285,7 +283,7 @@ function Level:buildCorridor(sRoom, eRoom)
   until (self:getTile(srow, scol).roomId == eRoom.id)
   
   if self:isValidEntrance(row, col) then 
-    table.insert(self.entrances, self:getTile(row,col)) 
+    self.entrances[#self.entrances+1] = self:getTile(row,col)
   end
 end
 
@@ -297,8 +295,8 @@ function Level:buildCorridorTile(row, col, adj)
   
   self:getTile(row, col).symbol = "."
   for i=1,#adj do
-    adjR = adj[i].r
-    adjC = adj[i].c
+    adjR = adj[i][1]
+    adjC = adj[i][2]
     if not (self:getTile(adjR, adjC):isFloor()) then 
       self:placeWall(adjR, adjC)
     end
@@ -322,7 +320,7 @@ function Level:addDoors()
   -- Adds open or closed door randomly to entrance tiles
   
   for i=1,#self.entrances do
-    if math.random() > 0.5 then
+    if random() > 0.5 then
       self.entrances[i].symbol = "+"
     else
       self.entrances[i].symbol = "'"
@@ -353,11 +351,11 @@ function Level:placeWall(r,c)
   -- Places wall at given coordinate. Could either place
   -- wall "#", soil "%" or mineral vein "*"
   
-  tile = self:getTile(r,c)
+  local tile = self:getTile(r,c)
   
-  if math.random() <= self.veinSpawnRate then
+  if random() <= self.veinSpawnRate then
     tile.symbol="*"
-  elseif math.random() <= self.soilSpawnRate then
+  elseif random() <= self.soilSpawnRate then
     tile.symbol="%"
     self.soilSpawnRate = 0.6     -- for clustering
     else
@@ -372,8 +370,8 @@ function Level:addStaircases()
   -- Adds staircases randomly
   -- Number of staircases depend on number of rooms
   
-  local maxStaircases = math.ceil(#self.rooms-(#self.rooms/2))
-  staircases = math.random(1,maxStaircases)
+  local maxStaircases = ceil(#self.rooms-(#self.rooms/2))
+  local staircases = random(1,maxStaircases)
 
   repeat
     local room = self:getRandRoom()
@@ -391,18 +389,18 @@ function Level:placeStaircase(room)
   -- Position is random number of steps away from center.
   
   room.hasStaircase = true
-  dir={ r=math.random(-1,1), c=math.random(-1,1) }
-  steps = math.random(0,math.floor(self.maxRoomSize/2))
-  row, col = room.center.r, room.center.c
+  local dir={ random(-1,1), random(-1,1) }
+  local steps = random(0, floor(self.maxRoomSize/2))
+  local row, col = room.center[1], room.center[2]
   
   for i=1,steps do
-    nrow, ncol = row+dir.r, col+dir.c
+    local nrow, ncol = row+dir[1], col+dir[2]
     if not (self:getTile(nrow, ncol).roomId == room.id) then
       break
     else
-      row, col = nrow, ncol
+      local row, col = nrow, ncol
     end
   end
   self:getTile(row, col).symbol="<"
-  table.insert(self.staircases, { r=row, c=col })
+  self.staircases[#self.staircases+1] = { row, col }
 end
