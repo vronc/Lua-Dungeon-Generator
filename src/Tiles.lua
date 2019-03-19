@@ -1,11 +1,10 @@
 require "helpFunctions"
 require "Tile"
 require "Room"
-require "Queue"
 
------------------------------------------------------------
--- - - - - - - - - - - Tiles object - - - - - - - - - - - - 
------------------------------------------------------------
+---------------------------------------------------------------------------
+-- - - - - - - - - - - - - - - - Tiles object - - - - - - - - - - - - - - - 
+---------------------------------------------------------------------------
 
 -- A Tiles object keep an overview of the Tile objects which are kept in a matrix
 
@@ -21,17 +20,18 @@ function Tiles:new(height, width, maxRooms)
   tiles.maxRoomSize = 15
   tiles.maxRooms = maxRooms
   
-  -- Will hold all rooms, index is ID 
+  -- Will hold all rooms, index is ID
   tiles.rooms = {}
-  -- Will hold tiles registered as room entrances
+  -- Will hold tiles with doors
   tiles.entrances = {}
+  tiles.staircases = {}
   
   setmetatable(tiles, Tiles)
 
   tiles.rootRoom=nil
   tiles.endRoom=nil
   tiles.veinSpawnRate = 0.02
-  tiles.soilSpawnRate = 0.1
+  tiles.soilSpawnRate = 0.05
   
   tiles:generateDungeon()
   
@@ -95,15 +95,22 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:getRoot()
-  -- return: Room that is root of room tree if such has been generated
+  -- return: Room that is root of room tree if such has been generated.
   return self.rootRoom
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:getEnd()
-  -- return: Leaf room added last to tree
+  -- return: Leaf room added last to tree if such has been generated.
   return self.endRoom
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:getStaircases()
+  -- To retrieve individual staircase, call .r for row, .c for col on individual entry.
+  return self.staircases
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -114,8 +121,8 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:isRoom(i,j)
-  return (not (self:getTile(i,j).roomId == 0))
+function Tiles:isRoom(row,col)
+  return (not (self:getTile(row,col).roomId == 0))
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -259,7 +266,7 @@ function Tiles:buildCorridor(sRoom, eRoom)
         dist = getDist(srow, scol, erow, ecol)
         --break           -- comment for more diagonal (shorter) walks!
       end
-      self:buildSingleTile(row, col, adj)
+      self:buildCorridorTile(row, col, adj)
     end
   until (self:getTile(srow, scol).roomId == eRoom.id)
   
@@ -270,13 +277,15 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:buildSingleTile(row, col, adj)
+function Tiles:buildCorridorTile(row, col, adj)
+  -- Builds floor tile surrounded by walls. 
+  -- Adjacent floor tiles remain floor tiles.
   
   self:getTile(row, col).symbol = "."
   for i=1,#adj do
     adjR = adj[i].r
     adjC = adj[i].c
-    if self:getTile(adjR, adjC).symbol == " " then 
+    if not (self:getTile(adjR, adjC):isFloor()) then 
       self:placeWall(adjR, adjC)
     end
   end
@@ -285,6 +294,9 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Tiles:isValidEntrance(row, col)
+  -- Tile is a valid entrance position if there is a wall above/below it or
+  -- to the left/to the right of it.
+  
   return (
     (self:getTile(row+1,col):isWall() and self:getTile(row-1,col):isWall()) or
     (self:getTile(row,col+1):isWall() and self:getTile(row,col-1):isWall())
@@ -331,12 +343,12 @@ function Tiles:placeWall(r,c)
   
   if math.random() <= self.veinSpawnRate then
     tile.symbol="*"
-    elseif math.random() <= self.soilSpawnRate then
+  elseif math.random() <= self.soilSpawnRate then
     tile.symbol="%"
-    self.soilspawnRate = 0.7     -- for clustering
+    self.soilSpawnRate = 0.6     -- for clustering
     else
     tile.symbol="#"
-    self.soilSpawnRate = 0.1
+    self.soilSpawnRate = 0.05
   end
 end
 
@@ -344,6 +356,7 @@ end
 
 function Tiles:addStaircases()
   -- Adds staircases randomly
+  -- Number of staircases depend on number of rooms
   
   local maxStaircases = math.ceil(#self.rooms-(#self.rooms/2))
   staircases = math.random(1,maxStaircases)
@@ -360,9 +373,12 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Tiles:placeStaircase(room)
+  -- Places staircase in given room. 
+  -- Position is random number of steps away from center.
+  
   room.hasStaircase = true
   dir={ r=math.random(-1,1), c=math.random(-1,1) }
-  steps = math.random(0,7)
+  steps = math.random(0,math.floor(self.maxRoomSize/2))
   row, col = room.center.r, room.center.c
   
   for i=1,steps do
@@ -374,6 +390,5 @@ function Tiles:placeStaircase(room)
     end
   end
   self:getTile(row, col).symbol="<"
+  table.insert(self.staircases, { r=row, c=col })
 end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
