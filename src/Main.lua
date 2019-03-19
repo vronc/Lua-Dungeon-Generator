@@ -1,4 +1,4 @@
-require "Tiles"
+require "Level"
 require "Tile"
 require "Room"
 
@@ -7,5 +7,5 @@ seed = os.time()
 math.randomseed(seed)
 print("seed: "..seed)
 
-dungeon = Tiles:new(50,50,15)
-dungeon:printTiles()
+lvl = Level:new(50,50,15)
+lvl:printLevel()

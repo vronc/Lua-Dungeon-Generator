@@ -3,44 +3,44 @@ require "Tile"
 require "Room"
 
 ---------------------------------------------------------------------------
--- - - - - - - - - - - - - - - - Tiles object - - - - - - - - - - - - - - - 
+-- - - - - - - - - - - - - - - - Level object - - - - - - - - - - - - - - - 
 ---------------------------------------------------------------------------
 
--- A Tiles object keep an overview of the Tile objects which are kept in a matrix
+-- A Level object keep an overview of the Tile objects which are kept in a matrix
 
-Tiles = {height, width, matrix, rooms, entrances}
-Tiles.__index = Tiles
+Level = {height, width, matrix, rooms, entrances}
+Level.__index = Level
 
-function Tiles:new(height, width, maxRooms)
-  if height < 10 or width < 10 then error("Tiles must have height>=10, width>=10") end
-  local tiles = {}
-  tiles.height = height
-  tiles.width = width
-  tiles.matrix = {}
-  tiles.maxRoomSize = 15
-  tiles.maxRooms = maxRooms
+function Level:new(height, width, maxRooms)
+  if height < 10 or width < 10 then error("Level must have height>=10, width>=10") end
+  local level = {}
+  level.height = height
+  level.width = width
+  level.matrix = {}
+  level.maxRoomSize = 15
+  level.maxRooms = maxRooms
   
   -- Will hold all rooms, index is ID
-  tiles.rooms = {}
+  level.rooms = {}
   -- Will hold tiles with doors
-  tiles.entrances = {}
-  tiles.staircases = {}
+  level.entrances = {}
+  level.staircases = {}
   
-  setmetatable(tiles, Tiles)
+  setmetatable(level, Level)
 
-  tiles.rootRoom=nil
-  tiles.endRoom=nil
-  tiles.veinSpawnRate = 0.02
-  tiles.soilSpawnRate = 0.05
+  level.rootRoom=nil
+  level.endRoom=nil
+  level.veinSpawnRate = 0.02
+  level.soilSpawnRate = 0.05
   
-  tiles:generateDungeon()
+  level:generateLevel()
   
-  return tiles
+  return level
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:generateDungeon()
+function Level:generateLevel()
   
   self:initMap(self.height, self.width)
   self:generateRooms()
@@ -56,7 +56,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:initMap(height, width)
+function Level:initMap(height, width)
   
   -- Create void
   for i=0,height+1 do
@@ -72,7 +72,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
-function Tiles:printTiles ()
+function Level:printLevel ()
 
     for i=0,self.height+1 do
       local row=""
@@ -86,7 +86,7 @@ function Tiles:printTiles ()
   
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:getRandRoom()
+function Level:getRandRoom()
   -- return: Random room
   local i = math.random(1,#self.rooms)
   return self.rooms[i]
@@ -94,40 +94,40 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:getRoot()
+function Level:getRoot()
   -- return: Room that is root of room tree if such has been generated.
   return self.rootRoom
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:getEnd()
+function Level:getEnd()
   -- return: Leaf room added last to tree if such has been generated.
   return self.endRoom
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:getStaircases()
+function Level:getStaircases()
   -- To retrieve individual staircase, call .r for row, .c for col on individual entry.
   return self.staircases
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
-function Tiles:getTile(r, c)
+function Level:getTile(r, c)
   return self.matrix[r][c]
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:isRoom(row,col)
+function Level:isRoom(row,col)
   return (not (self:getTile(row,col).roomId == 0))
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:getAdjacentPos(row, col)
+function Level:getAdjacentPos(row, col)
   -- returns table containing all adjacent positions {r,c} to given position
   -- INCLUDING SELF. to change this:
   -- add if (not (dx == 0 and dy == 0)) then ... end
@@ -145,7 +145,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:getAdjacentTiles(row, col)
+function Level:getAdjacentTiles(row, col)
   -- returns table containing all adjacent tiles to given position.
   -- Including self!
   
@@ -161,7 +161,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
-  function Tiles:generateRooms()
+  function Level:generateRooms()
     for i = 1,self.maxRooms do
       self:generateRoom()
     end
@@ -169,7 +169,7 @@ end
   
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
-function Tiles:generateRoom()
+function Level:generateRoom()
   -- Will randomly place rooms across tiles (no overlapping)
   minRoomSize = 3
   startRow = math.random(1, self.height-self.maxRoomSize)
@@ -192,7 +192,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:buildRoom(startR, startC, endR, endC)
+function Level:buildRoom(startR, startC, endR, endC)
   -- paint room onto board 
   
     id = #self.rooms+1
@@ -213,7 +213,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
-function Tiles:generateCorridors()
+function Level:generateCorridors()
   if #self.rooms < 1 then error("Can't generate corridors, no rooms exists")
   elseif #self.rooms == 1 then return end
   
@@ -248,7 +248,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
-function Tiles:buildCorridor(sRoom, eRoom)
+function Level:buildCorridor(sRoom, eRoom)
   srow, scol = sRoom.center.r, sRoom.center.c
   erow, ecol = eRoom.center.r, eRoom.center.c
   dist = getDist(srow, scol, erow, ecol)
@@ -277,7 +277,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:buildCorridorTile(row, col, adj)
+function Level:buildCorridorTile(row, col, adj)
   -- Builds floor tile surrounded by walls. 
   -- Adjacent floor tiles remain floor tiles.
   
@@ -293,7 +293,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
-function Tiles:isValidEntrance(row, col)
+function Level:isValidEntrance(row, col)
   -- Tile is a valid entrance position if there is a wall above/below it or
   -- to the left/to the right of it.
   
@@ -304,7 +304,7 @@ function Tiles:isValidEntrance(row, col)
 end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
-function Tiles:addDoors()
+function Level:addDoors()
   -- Adds open or closed door randomly to entrance tiles
   
   for i=1,#self.entrances do
@@ -318,7 +318,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
-function Tiles:addWalls(startR, startC, endR, endC)
+function Level:addWalls(startR, startC, endR, endC)
 
   -- Create upper and lower bound walls
   for j=startC,endC do
@@ -335,7 +335,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:placeWall(r,c)
+function Level:placeWall(r,c)
   -- Places wall at given coordinate. Could either place
   -- wall "#", soil "%" or mineral vein "*"
   
@@ -354,7 +354,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:addStaircases()
+function Level:addStaircases()
   -- Adds staircases randomly
   -- Number of staircases depend on number of rooms
   
@@ -372,7 +372,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:placeStaircase(room)
+function Level:placeStaircase(room)
   -- Places staircase in given room. 
   -- Position is random number of steps away from center.
   
