@@ -3,11 +3,6 @@ require "Tile"
 require "Room"
 require "Queue"
 
-seed = os.time()
---seed=1552925360
-math.randomseed(seed)
-print("seed: "..seed)
-
 -----------------------------------------------------------
 -- - - - - - - - - - - Tiles object - - - - - - - - - - - - 
 -----------------------------------------------------------
@@ -17,12 +12,14 @@ print("seed: "..seed)
 Tiles = {height, width, matrix, rooms, entrances}
 Tiles.__index = Tiles
 
-function Tiles:new(height, width)
+function Tiles:new(height, width, maxRooms)
   if height < 10 or width < 10 then error("Tiles must have height>=10, width>=10") end
   local tiles = {}
   tiles.height = height
   tiles.width = width
-  tiles.matrix ={}
+  tiles.matrix = {}
+  tiles.maxRoomSize = 15
+  tiles.maxRooms = maxRooms
   
   -- Will hold all rooms, index is ID 
   tiles.rooms = {}
@@ -36,8 +33,25 @@ function Tiles:new(height, width)
   tiles.veinSpawnRate = 0.02
   tiles.soilSpawnRate = 0.1
   
-  tiles:initMap(height, width)
+  tiles:generateDungeon()
+  
   return tiles
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:generateDungeon()
+  
+  self:initMap(self.height, self.width)
+  self:generateRooms()
+  self:generateCorridors()
+  self:addStaircases()
+  self:addDoors()
+  
+  rootr, rootc =self:getRoot().center.r, self:getRoot().center.c
+  endr, endc =self:getEnd().center.r, self:getEnd().center.c
+  self:getTile(rootr,rootc).symbol="@"
+  self:getTile(endr,endc).symbol="B"
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -105,9 +119,43 @@ function Tiles:isRoom(i,j)
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:getAdjacentPos(row, col)
+  -- returns table containing all adjacent positions {r,c} to given position
+  -- INCLUDING SELF. to change this:
+  -- add if (not (dx == 0 and dy == 0)) then ... end
   
-  function Tiles:generateRooms(amount)
-    for i = 1,amount do
+  local result = {}
+  for dx =-1,1 do
+    for dy=-1,1 do 
+      table.insert(result, {r=row+dy, c=col+dx})
+    end  
+  end
+  for i=1,#result do
+  end
+  return result
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Tiles:getAdjacentTiles(row, col)
+  -- returns table containing all adjacent tiles to given position.
+  -- Including self!
+  
+  local result={}
+  local adj=self:getAdjacentPos(row,col)
+  for i=1,#adj do
+    row = adj[i].r
+    col = adj[i].c
+    table.insert(result, self:getTile(row, col))
+  end
+  return result
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+  
+  function Tiles:generateRooms()
+    for i = 1,self.maxRooms do
       self:generateRoom()
     end
   end
@@ -116,14 +164,12 @@ end
   
 function Tiles:generateRoom()
   -- Will randomly place rooms across tiles (no overlapping)
-  
   minRoomSize = 3
-  maxRoomSize = 15
-  startRow = math.random(1, self.height-maxRoomSize)
-  startCol = math.random(1, self.width-maxRoomSize)
+  startRow = math.random(1, self.height-self.maxRoomSize)
+  startCol = math.random(1, self.width-self.maxRoomSize)
   
-  height = math.random(minRoomSize, maxRoomSize)
-  width = math.random(minRoomSize, maxRoomSize)
+  height = math.random(minRoomSize, self.maxRoomSize)
+  width = math.random(minRoomSize, self.maxRoomSize)
 
   for i=startRow-1, startRow+height+1 do
     for j=startCol-1, startCol+width+1 do
@@ -152,8 +198,7 @@ function Tiles:buildRoom(startR, startC, endR, endC)
     for i=startR, endR do
       for j=startC, endC do
         tile = self:getTile(i,j)
-        tile.roomId = id
-        tile.symbol = "."      -- floor tile
+        tile.roomId, tile.symbol = id, "."    -- floor tile
       end
     end
     self:addWalls(startR-1, startC-1, endR+1, endC+1)
@@ -212,9 +257,9 @@ function Tiles:buildCorridor(sRoom, eRoom)
       then
         srow, scol = adjr, adjc
         dist = getDist(srow, scol, erow, ecol)
-        --break           -- remove for more diagonal (shorter) walks!
+        --break           -- comment for more diagonal (shorter) walks!
       end
-      self:buildCorridorTile(row, col, adj)
+      self:buildSingleTile(row, col, adj)
     end
   until (self:getTile(srow, scol).roomId == eRoom.id)
   
@@ -225,7 +270,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Tiles:buildCorridorTile(row, col, adj)
+function Tiles:buildSingleTile(row, col, adj)
   
   self:getTile(row, col).symbol = "."
   for i=1,#adj do
@@ -294,36 +339,6 @@ function Tiles:placeWall(r,c)
     self.soilSpawnRate = 0.1
   end
 end
-function Tiles:getAdjacentPos(row, col)
-  -- returns table containing all adjacent positions {r,c} to given position
-  -- INCLUDING SELF. to change this:
-  -- add if (not (dx == 0 and dy == 0)) then ... end
-  
-  local result = {}
-  for dx =-1,1 do
-    for dy=-1,1 do 
-      table.insert(result, {r=row+dy, c=col+dx})
-    end  
-  end
-  for i=1,#result do
-  end
-  return result
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Tiles:getAdjacentTiles(row, col)
-  -- returns table containing all adjacent tiles to given position.
-  
-  local result={}
-  local adj=self:getAdjacentPos(row,col)
-  for i=1,#adj do
-    row = adj[i].r
-    col = adj[i].c
-    table.insert(result, self:getTile(row, col))
-  end
-  return result
-end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
@@ -348,17 +363,14 @@ function Tiles:placeStaircase(room)
   room.hasStaircase = true
   dir={ r=math.random(-1,1), c=math.random(-1,1) }
   steps = math.random(0,7)
-  row = room.center.r
-  col = room.center.c
+  row, col = room.center.r, room.center.c
   
   for i=1,steps do
-    nrow=row+dir.r
-    ncol=col+dir.c
+    nrow, ncol = row+dir.r, col+dir.c
     if not (self:getTile(nrow, ncol).roomId == room.id) then
       break
     else
-      row=nrow
-      col=ncol
+      row, col = nrow, ncol
     end
   end
   self:getTile(row, col).symbol="<"
