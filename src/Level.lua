@@ -6,19 +6,20 @@ require "Room"
 -- - - - - - - - - - - - - - - - Level object - - - - - - - - - - - - - - - 
 ---------------------------------------------------------------------------
 
--- A Level object keep an overview of the Tile objects which are kept in a matrix
+-- A Level object consist of several Tile objects which together make up 
+-- one dungeon level.
 
-Level = {height, width, matrix, rooms, entrances}
+Level = {height, width, matrix, rooms, entrances, staircases}
 Level.__index = Level
 
-function Level:new(height, width, maxRooms)
+function Level:new(height, width)
   if height < 10 or width < 10 then error("Level must have height>=10, width>=10") end
   local level = {}
   level.height = height
   level.width = width
   level.matrix = {}
   level.maxRoomSize = 15
-  level.maxRooms = maxRooms
+  level.maxRooms = 15
   
   -- Will hold all rooms, index is ID
   level.rooms = {}
@@ -59,7 +60,7 @@ end
 function Level:initMap(height, width)
   
   -- Create void
-  for i=0,height+1 do
+  for i=-1,height+1 do
     self.matrix[i] = {}
     for j=0,width+1 do
       self.matrix[i][j] = Tile:new(" ")
@@ -74,7 +75,7 @@ end
   
 function Level:printLevel ()
 
-    for i=0,self.height+1 do
+    for i=-1,self.height+1 do
       local row=""
       for j=0,self.width+1 do
         row=row..self.matrix[i][j].symbol.." "
@@ -84,6 +85,19 @@ function Level:printLevel ()
     end
   end
   
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Level:setLevelNr(nr)
+  local s = "  LEVEL  "..nr.."  "
+  local start = math.floor(self.width/2-string.len(s)/2)
+
+  for i=1,string.len(s) do
+    --print(s[i])
+    --print(self:getTile(0,start+i).symbol)
+    self:getTile(-1,start+i).symbol = s[i]
+  end
+end
+
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:getRandRoom()

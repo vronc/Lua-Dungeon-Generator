@@ -27,3 +27,9 @@ function getDist(row1, col1, row2, col2)
 end  
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+-- source: http://lua-users.org/wiki/StringIndexing
+local strdefi=getmetatable('').__index
+getmetatable('').__index=function(str,i) if type(i) == "number" then
+    return string.sub(str,i,i)
+    else return strdefi[i] end end
