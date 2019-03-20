@@ -5,20 +5,31 @@
 -- Tile objects:
 
 --  * Has graphic symbol to represent what kind of tile this is in dungeon
---    *   " " for void
+--    *   " " for empty
 --    *   "." for floor
 --    *   "#" for wall
 --    *   "<" for staircase
 --    *   "%" for soil
 --    *   "*" for mineral vein
+--    *   "'" for open door
+--    *   "+" for closed door
 --  * Keeps track of room association, if not in room (default): roomId = 0
 
-Tile = {symbol, roomId, visited}
+Tile = {class, roomId}
 Tile.__index = Tile
 
-function Tile:new(c)
+Tile.EMPTY = " "
+Tile.FLOOR = "."
+Tile.WALL = "#"
+Tile.STAIRCASE = "<"
+Tile.SOIL = "%"
+Tile.VEIN = "*"
+Tile.C_DOOR = "+"
+Tile.O_DOOR = "'"
+
+function Tile:new(t)
   local tile = {}
-  tile.symbol = c
+  tile.class = t
   tile.roomId = 0
   
   setmetatable(tile, Tile)
@@ -30,15 +41,15 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Tile:isFloor() 
-  return self.symbol == "."
+  return self.class == Tile.FLOOR
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Tile:isWall() 
   return (
-    self.symbol == "#" or
-    self.symbol == "%" or
-    self.symbol == "*"
+    self.class == Tile.WALL or
+    self.class == Tile.SOIL or
+    self.class == Tile.VEIN
     )
 end

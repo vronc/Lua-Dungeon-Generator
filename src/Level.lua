@@ -1,7 +1,7 @@
 require "helpFunctions"
 require "Tile"
 require "Room"
-
+--seed = os.time()
 local random = math.random
 local floor = math.floor
 local ceil = math.ceil
@@ -47,11 +47,11 @@ function Level:generateLevel()
   self:generateCorridors()
   self:addStaircases()
   self:addDoors()
-  
-  local rootr, rootc =self:getRoot().center[1], self:getRoot().center[2]
+  if not self:getRoot() then print(seed) end
+  local rootr, rootc = self:getRoot().center[1], self:getRoot().center[2]
   local endr, endc =self:getEnd().center[1], self:getEnd().center[2]
-  self:getTile(rootr,rootc).symbol="@"
-  self:getTile(endr,endc).symbol="B"
+  self:getTile(rootr,rootc).class="@"
+  self:getTile(endr,endc).class="B"
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -62,7 +62,7 @@ function Level:initMap(height, width)
   for i=-1,height+1 do
     self.matrix[i] = {}
     for j=0,width+1 do
-      self.matrix[i][j] = Tile:new(" ")
+      self.matrix[i][j] = Tile:new(Tile.EMPTY)
     end
   end
   
@@ -77,8 +77,8 @@ function Level:printLevel ()
     for i=-1,self.height+1 do
       local row=""
       for j=0,self.width+1 do
-        row=row..self.matrix[i][j].symbol.." "
-        --row=row..self.matrix[i][j].roomId.." "    -- for exposing room-ids
+        row=row..self.matrix[i][j].class..Tile.EMPTY
+        --row=row..self.matrix[i][j].roomId..Tile.EMPTY    -- for exposing room-ids
       end
       print(row)
     end
@@ -92,8 +92,8 @@ function Level:setLevelNr(nr)
 
   for i=1,string.len(s) do
     --print(s[i])
-    --print(self:getTile(0,start+i).symbol)
-    self:getTile(-1,start+i).symbol = s[i]
+    --print(self:getTile(0,start+i).class)
+    self:getTile(-1,start+i).class = s[i]
   end
 end
 
@@ -218,7 +218,7 @@ function Level:buildRoom(startR, startC, endR, endC)
   for i=startR, endR do
     for j=startC, endC do
       local tile = self:getTile(i,j)
-      tile.roomId, tile.symbol = id, "."    -- floor tile
+      tile.roomId, tile.class = id, Tile.FLOOR    -- floor tile
     end
   end
   self:addWalls(startR-1, startC-1, endR+1, endC+1)
@@ -293,7 +293,7 @@ function Level:buildCorridorTile(row, col, adj)
   -- Builds floor tile surrounded by walls. 
   -- Adjacent floor tiles remain floor tiles.
   
-  self:getTile(row, col).symbol = "."
+  self:getTile(row, col).class = Tile.FLOOR
   for i=1,#adj do
     adjR = adj[i][1]
     adjC = adj[i][2]
@@ -321,9 +321,9 @@ function Level:addDoors()
   
   for i=1,#self.entrances do
     if random() > 0.5 then
-      self.entrances[i].symbol = "+"
+      self.entrances[i].class = Tile.C_DOOR
     else
-      self.entrances[i].symbol = "'"
+      self.entrances[i].class = Tile.O_DOOR
     end
   end
 end
@@ -349,17 +349,17 @@ end
 
 function Level:placeWall(r,c)
   -- Places wall at given coordinate. Could either place
-  -- wall "#", soil "%" or mineral vein "*"
+  -- wall, soil or mineral vein
   
   local tile = self:getTile(r,c)
   
   if random() <= self.veinSpawnRate then
-    tile.symbol="*"
+    tile.class = Tile.VEIN
   elseif random() <= self.soilSpawnRate then
-    tile.symbol="%"
+    tile.class = Tile.SOIL
     self.soilSpawnRate = 0.6     -- for clustering
     else
-    tile.symbol="#"
+    tile.class = Tile.WALL
     self.soilSpawnRate = 0.05
   end
 end
@@ -401,6 +401,6 @@ function Level:placeStaircase(room)
       local row, col = nrow, ncol
     end
   end
-  self:getTile(row, col).symbol="<"
+  self:getTile(row, col).class=Tile.STAIRCASE
   self.staircases[#self.staircases+1] = { row, col }
 end
