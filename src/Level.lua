@@ -152,7 +152,7 @@ function Level:getAdjacentTiles(row, col)
   local result={}
   local adj=getAdjacentPos(row,col)
   for i=1,#adj do
-    local row, col = adj[i].r, adj[i].c
+    local row, col = adj[i][1], adj[i][2]
     result[#result+1] = self:getTile(row, col)
   end
   return result
@@ -215,58 +215,62 @@ function Level:generateCorridors()
   if #self.rooms < 1 then error("Can't generate corridors, no rooms exists")
   elseif #self.rooms == 1 then return end
 
-  q = prims(table.clone(self.rooms))
-  neighbours = Queue.popleft(q)
-  self.rootRoom = neighbours[1]
-  repeat
-    self:buildCorridor(neighbours[1], neighbours[2])
-    self.endRoom=neighbours[2]
-    neighbours = Queue.popleft(q)
-  until neighbours == "end"
+  local root, lastLeaf = prims(table.clone(self.rooms))
+  self.rootRoom = root
+  self.endRoom = lastLeaf
+
+  self:buildCorridor(root)
   
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
-function Level:buildCorridor(sRoom, eRoom)
-  local srow, scol = sRoom.center[1], sRoom.center[2]
-  local erow, ecol = eRoom.center[1], eRoom.center[2]
-  dist = getDist(srow, scol, erow, ecol)
+function Level:buildCorridor(root)
+  -- Recursive DFS function for building corridors to every neighbour of a room (root)
   
-  repeat
-    row, col = srow, scol
-    local adj = getAdjacentPos(srow, scol)
+  for i=1,#root.neighbours do
+    local neigh = root.neighbours[i]
+    local start = root.center
+    local goal = neigh.center
+    dist = getDist(start, goal)
+  
+    repeat
+      row, col = start[1], start[2]
+      local adj = getAdjacentPos(start[1], start[2])
 
-    for i=1,#adj do
-      local adjr, adjc = adj[i].r, adj[i].c
-      if (getDist(adjr, adjc, erow, ecol) < dist) and
-          i%2==0        -- not picking diagonals
-      then
-        srow, scol = adjr, adjc
-        dist = getDist(srow, scol, erow, ecol)
-        --break           -- comment for more diagonal (shorter) walks!
+      for i=1,#adj do
+        local adjT = adj[i]
+        if (getDist(adjT, goal) < dist) and
+            i%2==0        -- not picking diagonals
+        then
+          start = adjT
+          dist = getDist(start, goal)
+          --break           -- comment for more diagonal (shorter) walks!
+        end
+        self:buildTile(row, col, adj)
+        if random() < 0.01 then self:randomBlob(row,col,adj) end    -- Makes the corridors a little more interesting (slower)
       end
-      self:buildCorridorTile(row, col, adj)
-      if random() < 0.1 then self:randomBlob(row,col,adj) end    -- Makes the corridors a little more interesting (slower)
+    until (self:getTile(start[1], start[2]).roomId == neigh.id)
+    
+    if self:isValidEntrance(row, col) then 
+      self.entrances[#self.entrances+1] = self:getTile(row,col)
     end
-  until (self:getTile(srow, scol).roomId == eRoom.id)
+    self:buildCorridor(neigh)
+  end 
   
-  if self:isValidEntrance(row, col) then 
-    self.entrances[#self.entrances+1] = self:getTile(row,col)
-  end
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Level:buildCorridorTile(r, c, adj)
+function Level:buildTile(r, c, adj)
   -- Builds floor tile surrounded by walls. 
   -- Adjacent floor tiles remain floor tiles.
 
   self:getTile(r, c).class = Tile.FLOOR
   for i=1,#adj do
-    adjR, adjC = adj[i].r, adj[i].c
-    if not (self:getTile(adjR, adjC).class == Tile.FLOOR) then 
-      self:placeWall(adjR, adjC)
+    r, c = adj[i][1], adj[i][2]
+    if not (self:getTile(r,c).class == Tile.FLOOR) then 
+      self:placeWall(r,c)
     end
   end
 end
@@ -391,7 +395,7 @@ function Level:randomBlob(r,c,adj)
     local r,c = getRandNeighbour(r,c)
     if (self:getTile(r,c).roomId==0) then
       local adj = getAdjacentPos(r, c)
-      self:buildCorridorTile(r, c, adj)
+      self:buildTile(r, c, adj)
     end
   end
 end

@@ -14,7 +14,7 @@ function getAdjacentPos(row, col)
   local result = {}
   for dx =-1,1 do
     for dy=-1,1 do 
-      result[#result+1] = { r=row+dy, c=col+dx }
+      result[#result+1] = { row+dy, col+dx }
     end  
   end
   for i=1,#result do
@@ -31,16 +31,13 @@ end
 
 function prims(unvisited)
   len = #unvisited
-  q = Queue:new()
   local root=table.remove(unvisited, 1)
-  --self.rootRoom=root
   local visited={}
-  visited[1] = root
+  table.insert(visited, root)
   repeat
     local dist = 1e309    -- ~inf
     for i=1,#visited do
       for j=1,#unvisited do
-
         if (unvisited[j]:distanceTo(visited[i]) < dist) then
           dist = unvisited[j]:distanceTo(visited[i])
           v0 = visited[i]
@@ -49,11 +46,11 @@ function prims(unvisited)
       end
     end
     v1 = table.remove(unvisited, endIndex)
-    Queue.pushright(q, {v0, v1})
-    visited[#visited+1] = v1
+    v0:addNeighbour(v1)
+    table.insert(visited, v1)
 until #visited == len
 
-return q
+return visited[1], visited[#visited]
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -74,10 +71,10 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function getDist(row1, col1, row2, col2)
+function getDist(start, goal)
   return math.sqrt(
-    math.pow(math.abs(row1-row2),2)+
-    math.pow(math.abs(col1-col2),2)
+    math.pow(math.abs(goal[1]-start[1]),2)+
+    math.pow(math.abs(goal[2]-start[2]),2)
     )
 end  
 

@@ -29,19 +29,13 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Room:addNeighbour(other)
-  self.neighbours[other.id]=true
+  table.insert(self.neighbours, other)
 end
   
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Room:hasNeighbours()
   return tablelength(self.neighbours)>1
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Room:areNeighbours(other)
-  return (self.neighbours[other.id])
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
