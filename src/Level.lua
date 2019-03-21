@@ -28,16 +28,17 @@ Level.soilSpawnRate = 0.05
 
 function Level:new(height, width)
   if height < 10 or width < 10 then error("Level must have height>=10, width>=10") end
-  local level = { height=height,
-                width=width,
-                matrix={},
-                rooms = {},
-                entrances = {},
-                staircases = {},
-                rootRoom=nil,
-                endRoom=nil,
-                nr=nr
-                }
+  local level = { 
+    height=height,
+    width=width,
+    matrix={},
+    rooms = {},
+    entrances = {},
+    staircases = {},
+    rootRoom=nil,
+    endRoom=nil,
+    nr=nil
+  }
   
   setmetatable(level, Level)
   return level
@@ -246,7 +247,7 @@ function Level:buildCorridor(sRoom, eRoom)
         --break           -- comment for more diagonal (shorter) walks!
       end
       self:buildCorridorTile(row, col, adj)
-      if random() < 0.1 then self:randomBlob(row,col,adj) end
+      if random() < 0.1 then self:randomBlob(row,col,adj) end    -- Makes the corridors a little more interesting (slower)
     end
   until (self:getTile(srow, scol).roomId == eRoom.id)
   
@@ -374,16 +375,22 @@ function Level:placeBoss()
   self:getTile(endr,endc).class=Tile.BOSS
 end
   
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
 function Level:placePlayer()
   local rootr, rootc = self:getRoot().center[1], self:getRoot().center[2]
   self:getTile(rootr,rootc).class=Tile.PLAYER
 end
 
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
 function Level:randomBlob(r,c,adj)
+  -- Creates random floor tiles around given tile.
+  
   for i=1,10 do
     local r,c = getRandNeighbour(r,c)
-    local adj = getAdjacentPos(r, c)
     if (self:getTile(r,c).roomId==0) then
+      local adj = getAdjacentPos(r, c)
       self:buildCorridorTile(r, c, adj)
     end
   end
