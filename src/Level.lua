@@ -220,7 +220,6 @@ function Level:generateCorridors()
   self.endRoom = lastLeaf
 
   self:buildCorridor(root)
-  
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -230,31 +229,22 @@ function Level:buildCorridor(root)
   
   for i=1,#root.neighbours do
     local neigh = root.neighbours[i]
-    local start = root.center
-    local goal = neigh.center
+    local start, goal = root.center, neigh.center
     dist = getDist(start, goal)
-  
+    nextTile = findNext(start,goal,dist)
+    
     repeat
-      row, col = start[1], start[2]
-      local adj = getAdjacentPos(start[1], start[2])
-
-      for i=1,#adj do
-        local adjT = adj[i]
-        if (getDist(adjT, goal) < dist) and
-            i%2==0        -- not picking diagonals
-        then
-          start = adjT
-          dist = getDist(start, goal)
-          --break           -- comment for more diagonal (shorter) walks!
-        end
-        self:buildTile(row, col, adj)
-        if random() < 0.01 then self:randomBlob(row,col,adj) end    -- Makes the corridors a little more interesting (slower)
-      end
-    until (self:getTile(start[1], start[2]).roomId == neigh.id)
+      row, col = nextTile[1], nextTile[2]
+      self:buildTile(row, col)
+      
+      if random() < 0.01 then self:randomBlob(row,col,adj) end  -- Makes the corridors a little more interesting 
+      nextTile = findNext(nextTile,goal,dist)
+    until (self:getTile(nextTile[1], nextTile[2]).roomId == neigh.id)
     
     if self:isValidEntrance(row, col) then 
-      self.entrances[#self.entrances+1] = self:getTile(row,col)
+      table.insert(self.entrances, self:getTile(row,col))
     end
+    
     self:buildCorridor(neigh)
   end 
   
@@ -262,10 +252,11 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Level:buildTile(r, c, adj)
+function Level:buildTile(r, c)
   -- Builds floor tile surrounded by walls. 
   -- Adjacent floor tiles remain floor tiles.
 
+  local adj = getAdjacentPos(r,c)
   self:getTile(r, c).class = Tile.FLOOR
   for i=1,#adj do
     r, c = adj[i][1], adj[i][2]
@@ -395,7 +386,7 @@ function Level:randomBlob(r,c,adj)
     local r,c = getRandNeighbour(r,c)
     if (self:getTile(r,c).roomId==0) then
       local adj = getAdjacentPos(r, c)
-      self:buildTile(r, c, adj)
+      self:buildTile(r, c)
     end
   end
 end

@@ -24,6 +24,23 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+function findNext(start, goal, dist)
+  row, col = start[1], start[2]
+  local adj = getAdjacentPos(start[1], start[2])
+
+  for i=1,#adj do
+    local adjT = adj[i]
+    if (getDist(adjT, goal) < dist) and
+        i%2==0        -- not picking diagonals
+    then
+      nextTile = adjT
+      dist = getDist(nextTile, goal)
+      --break           -- comment for more diagonal (shorter) walks!
+    end
+  end
+  return nextTile
+end
+
 function getRandNeighbour(row, col)
   local dir={ random(-1,1), random(-1,1) }
   return row+dir[1], col+dir[2]
