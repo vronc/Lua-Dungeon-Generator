@@ -40,7 +40,6 @@ function Level:new(height, width)
                 }
   
   setmetatable(level, Level)
-  
   return level
 end
 
@@ -53,10 +52,8 @@ function Level:generateLevel()
   self:generateCorridors()
   self:addStaircases()
   self:addDoors()
-  --local rootr, rootc = self:getRoot().center[1], self:getRoot().center[2]
-  --local endr, endc =self:getEnd().center[1], self:getEnd().center[2]
-  --self:getTile(rootr,rootc).class="@"     -- temp for adding player
-  --self:getTile(endr,endc).class="B"     -- temp for adding Boss
+  self:placeBoss()
+  self:placePlayer()
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -72,7 +69,6 @@ function Level:initMap(height, width)
   end
   
   self:addWalls(0, 0, height+1, width+1)
-  
 end 
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -223,10 +219,10 @@ function Level:generateCorridors()
   self.rootRoom = neighbours[1]
   repeat
     self:buildCorridor(neighbours[1], neighbours[2])
+    self.endRoom=neighbours[2]
     neighbours = Queue.popleft(q)
   until neighbours == "end"
   
-  --self.endRoom=endRoom
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -250,6 +246,7 @@ function Level:buildCorridor(sRoom, eRoom)
         --break           -- comment for more diagonal (shorter) walks!
       end
       self:buildCorridorTile(row, col, adj)
+      if random() < 0.1 then self:randomBlob(row,col,adj) end
     end
   until (self:getTile(srow, scol).roomId == eRoom.id)
   
@@ -263,6 +260,7 @@ end
 function Level:buildCorridorTile(r, c, adj)
   -- Builds floor tile surrounded by walls. 
   -- Adjacent floor tiles remain floor tiles.
+
   self:getTile(r, c).class = Tile.FLOOR
   for i=1,#adj do
     adjR, adjC = adj[i].r, adj[i].c
@@ -340,7 +338,7 @@ function Level:addStaircases()
   -- Number of staircases depend on number of rooms
   
   local maxStaircases = ceil(#self.rooms-(#self.rooms/2))
-  local staircases = random(1,maxStaircases)
+  local staircases = random(2,maxStaircases)
 
   repeat
     local room = self:getRandRoom()
@@ -367,4 +365,26 @@ function Level:placeStaircase(room)
   self:getTile(row, col).class=Tile.STAIRCASE
   room.hasStaircase = true
   table.insert( self.staircases, { row, col } )
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Level:placeBoss() 
+  local endr, endc =self:getEnd().center[1], self:getEnd().center[2]
+  self:getTile(endr,endc).class=Tile.BOSS
+end
+  
+function Level:placePlayer()
+  local rootr, rootc = self:getRoot().center[1], self:getRoot().center[2]
+  self:getTile(rootr,rootc).class=Tile.PLAYER
+end
+
+function Level:randomBlob(r,c,adj)
+  for i=1,10 do
+    local r,c = getRandNeighbour(r,c)
+    local adj = getAdjacentPos(r, c)
+    if (self:getTile(r,c).roomId==0) then
+      self:buildCorridorTile(r, c, adj)
+    end
+  end
 end

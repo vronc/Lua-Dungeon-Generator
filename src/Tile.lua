@@ -27,6 +27,9 @@ Tile.VEIN = "*"
 Tile.C_DOOR = "+"
 Tile.O_DOOR = "'"
 
+Tile.PLAYER = "@"
+Tile.BOSS = "B"
+
 function Tile:new(t)
   local tile = {}
   tile.class = t
