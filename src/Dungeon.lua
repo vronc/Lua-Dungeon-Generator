@@ -16,6 +16,8 @@ function Dungeon:new(nrOfLevels, height, width)
     newLevel = Level:new(height, width)
     newLevel:generateLevel()
     newLevel:setLevelNr(i)
+    newLevel:placeBoss()
+    newLevel:placePlayer()
     dungeon[i] = newLevel
   end
   

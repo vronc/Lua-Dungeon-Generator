@@ -53,8 +53,6 @@ function Level:generateLevel()
   self:generateCorridors()
   self:addStaircases()
   self:addDoors()
-  self:placeBoss()
-  self:placePlayer()
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -198,7 +196,7 @@ function Level:buildRoom(startR, startC, endR, endC)
   local room = Room:new(id)
   
   local r,c =endR-floor((endR-startR)/2), endC-floor((endC-startC)/2)
-  room.center = {r, c}
+  room:setCenter(r,c)
   self.rooms[#self.rooms+1] = room
   for i=startR, endR do
     for j=startC, endC do
@@ -230,14 +228,14 @@ function Level:buildCorridor(root)
   for i=1,#root.neighbours do
     local neigh = root.neighbours[i]
     local start, goal = root.center, neigh.center
-    dist = getDist(start, goal)
-    nextTile = findNext(start,goal,dist)
+    local dist = getDist(start, goal)
+    local nextTile = findNext(start,goal,dist)
     
     repeat
-      row, col = nextTile[1], nextTile[2]
+      local row, col = nextTile[1], nextTile[2]
       self:buildTile(row, col)
       
-      if random() < 0.01 then self:randomBlob(row,col,adj) end  -- Makes the corridors a little more interesting 
+      if random() < 0.5 then self:randomBlob(row,col) end  -- Makes the corridors a little more interesting 
       nextTile = findNext(nextTile,goal,dist)
     until (self:getTile(nextTile[1], nextTile[2]).roomId == neigh.id)
     
@@ -366,26 +364,39 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:placeBoss() 
-  local endr, endc =self:getEnd().center[1], self:getEnd().center[2]
-  self:getTile(endr,endc).class=Tile.BOSS
+  c=self:getEnd().center
+  adj = getAdjacentPos(c[1], c[2])
+  i=1
+  repeat
+    endr, endc = adj[i][1], adj[i][2]
+    i=i+1
+  until self:getTile(endr,endc).class == Tile.FLOOR
+  
+  self:getTile(endr,endc).class = Tile.BOSS
 end
   
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:placePlayer()
-  local rootr, rootc = self:getRoot().center[1], self:getRoot().center[2]
-  self:getTile(rootr,rootc).class=Tile.PLAYER
+  c=self:getRoot().center
+  adj = getAdjacentPos(c[1], c[2])
+  i=1
+  repeat
+    endr, endc = adj[i][1], adj[i][2]
+    i=i+1
+  until self:getTile(endr,endc).class == Tile.FLOOR
+  
+  self:getTile(endr,endc).class = Tile.PLAYER
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Level:randomBlob(r,c,adj)
-  -- Creates random floor tiles around given tile.
-  
-  for i=1,10 do
+function Level:randomBlob(r,c)
+  -- Creates random floor tiles around given tile. 
+  local rand = random(1,15)
+  for i=1,rand do
     local r,c = getRandNeighbour(r,c)
     if (self:getTile(r,c).roomId==0) then
-      local adj = getAdjacentPos(r, c)
       self:buildTile(r, c)
     end
   end

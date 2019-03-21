@@ -40,6 +40,12 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+function Room:setCenter(r,c)
+  self.center = {r, c}
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
 function Room:distanceTo(other)
   -- returns distance from self to other room's center.
   
