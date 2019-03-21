@@ -42,7 +42,6 @@ end
 
 function Room:areNeighbours(other)
   return (self.neighbours[other.id])
-
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 

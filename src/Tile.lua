@@ -40,12 +40,6 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
-function Tile:isFloor() 
-  return self.class == Tile.FLOOR
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
-
 function Tile:isWall() 
   return (
     self.class == Tile.WALL or

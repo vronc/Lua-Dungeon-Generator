@@ -1,10 +1,14 @@
-require "helpFunctions"
-require "Tile"
-require "Room"
---seed = os.time()
+local FuncModule = require("helpFunctions")
+local TileModule = require("Tile")
+local RoomModule = require("Room")
+
 local random = math.random
 local floor = math.floor
 local ceil = math.ceil
+
+seed = os.time()
+math.randomseed(seed)
+print("seed: "..seed)
 
 ---------------------------------------------------------------------------
 -- - - - - - - - - - - - - - - - Level object - - - - - - - - - - - - - - - 
@@ -47,11 +51,10 @@ function Level:generateLevel()
   self:generateCorridors()
   self:addStaircases()
   self:addDoors()
-  if not self:getRoot() then print(seed) end
-  local rootr, rootc = self:getRoot().center[1], self:getRoot().center[2]
-  local endr, endc =self:getEnd().center[1], self:getEnd().center[2]
-  self:getTile(rootr,rootc).class="@"
-  self:getTile(endr,endc).class="B"
+  --local rootr, rootc = self:getRoot().center[1], self:getRoot().center[2]
+  --local endr, endc =self:getEnd().center[1], self:getEnd().center[2]
+  --self:getTile(rootr,rootc).class="@"     -- temp for adding player
+  --self:getTile(endr,endc).class="B"     -- temp for adding Boss
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -91,8 +94,6 @@ function Level:setLevelNr(nr)
   local start = floor(self.width/2-string.len(s)/2)
 
   for i=1,string.len(s) do
-    --print(s[i])
-    --print(self:getTile(0,start+i).class)
     self:getTile(-1,start+i).class = s[i]
   end
 end
@@ -100,7 +101,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:getRandRoom()
-  -- return: Random room
+  -- return: Random room in level
   local i = random(1,#self.rooms)
   return self.rooms[i]
 end
@@ -122,7 +123,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:getStaircases()
-  -- To retrieve individual staircase, call .r for row, .c for col on individual entry.
+  -- To retrieve individual staircase, index [1] for row, [2] for col on individual entry.
   return self.staircases
 end
 
@@ -140,30 +141,12 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Level:getAdjacentPos(row, col)
-  -- returns table containing all adjacent positions {r,c} to given position
-  -- INCLUDING SELF. to change this:
-  -- add if (not (dx == 0 and dy == 0)) then ... end
-  
-  local result = {}
-  for dx =-1,1 do
-    for dy=-1,1 do 
-      result[#result+1]={ row+dy, col+dx }
-    end  
-  end
-  for i=1,#result do
-  end
-  return result
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
 function Level:getAdjacentTiles(row, col)
   -- returns table containing all adjacent tiles to given position.
   -- Including self!
   
   local result={}
-  local adj=self:getAdjacentPos(row,col)
+  local adj=getAdjacentPos(row,col)
   for i=1,#adj do
     local row = adj[i][1]
     local col = adj[i][2]
@@ -210,7 +193,6 @@ function Level:buildRoom(startR, startC, endR, endC)
 
   local id = #self.rooms+1
   local room = Room:new(id)
-  room:addNeighbour(room)    -- rooms are their own neighbours
   
   local r,c =endR-floor((endR-startR)/2), endC-floor((endC-startC)/2)
   room.center = {r, c}
@@ -229,33 +211,16 @@ end
 function Level:generateCorridors()
   if #self.rooms < 1 then error("Can't generate corridors, no rooms exists")
   elseif #self.rooms == 1 then return end
-  
-  -- ### PRIM'S ALGORITHM ### --
 
-  local visited={}
-  local unvisited = table.clone(self.rooms)
-  
-  local root=table.remove(unvisited, 1)
-  self.rootRoom=root
-  visited[#visited+1] = root
+  q = prims(table.clone(self.rooms))
+  neighbours = Queue.popleft(q)
+  self.rootRoom = neighbours[1]
   repeat
-    local dist = 1e309    -- ~inf
-    for i=1,#visited do
-      for j=1,#unvisited do
-
-        if (unvisited[j]:distanceTo(visited[i]) < dist) then
-          dist = unvisited[j]:distanceTo(visited[i])
-          startRoom=visited[i]
-          endIndex=j
-        end
-      end
-    end
-    endRoom = table.remove(unvisited, endIndex)
-    self:buildCorridor(startRoom, endRoom)
-    visited[#visited+1] = endRoom
-
-  until #visited == #self.rooms
-  self.endRoom=endRoom
+    self:buildCorridor(neighbours[1], neighbours[2])
+    neighbours = Queue.popleft(q)
+  until neighbours == "end"
+  
+  --self.endRoom=endRoom
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -267,7 +232,7 @@ function Level:buildCorridor(sRoom, eRoom)
   
   repeat
     row, col = srow, scol
-    local adj = self:getAdjacentPos(srow, scol)
+    local adj = getAdjacentPos(srow, scol)
 
     for i=1,#adj do
       local adjr, adjc = adj[i][1], adj[i][2]
@@ -289,15 +254,15 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Level:buildCorridorTile(row, col, adj)
+function Level:buildCorridorTile(r, c, adj)
   -- Builds floor tile surrounded by walls. 
   -- Adjacent floor tiles remain floor tiles.
   
-  self:getTile(row, col).class = Tile.FLOOR
+  self:getTile(r, c).class = Tile.FLOOR
   for i=1,#adj do
     adjR = adj[i][1]
     adjC = adj[i][2]
-    if not (self:getTile(adjR, adjC):isFloor()) then 
+    if not (self:getTile(adjR, adjC).class == Tile.FLOOR) then 
       self:placeWall(adjR, adjC)
     end
   end
@@ -306,8 +271,8 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Level:isValidEntrance(row, col)
-  -- Tile is a valid entrance position if there is a wall above/below it or
-  -- to the left/to the right of it.
+  -- Tile is a valid entrance position if there is a wall above and below it or
+  -- to the left and to the right of it.
   
   return (
     (self:getTile(row+1,col):isWall() and self:getTile(row-1,col):isWall()) or
@@ -331,14 +296,15 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Level:addWalls(startR, startC, endR, endC)
-
-  -- Create upper and lower bound walls
+  -- Places walls on circumference of given rectangle.
+  
+  -- Upper and lower sides
   for j=startC,endC do
     self:placeWall(startR, j)
     self:placeWall(endR, j)
   end
   
-  -- Create left and right bound walls
+  -- Left and right sides
   for i=startR,endR do
     self:placeWall(i, startC)
     self:placeWall(i, endC)
@@ -349,7 +315,7 @@ end
 
 function Level:placeWall(r,c)
   -- Places wall at given coordinate. Could either place
-  -- wall, soil or mineral vein
+  -- regular wall, soil or mineral vein
   
   local tile = self:getTile(r,c)
   
@@ -358,7 +324,7 @@ function Level:placeWall(r,c)
   elseif random() <= self.soilSpawnRate then
     tile.class = Tile.SOIL
     self.soilSpawnRate = 0.6     -- for clustering
-    else
+  else
     tile.class = Tile.WALL
     self.soilSpawnRate = 0.05
   end
@@ -367,7 +333,6 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:addStaircases()
-  -- Adds staircases randomly
   -- Number of staircases depend on number of rooms
   
   local maxStaircases = ceil(#self.rooms-(#self.rooms/2))
@@ -387,20 +352,15 @@ end
 function Level:placeStaircase(room)
   -- Places staircase in given room. 
   -- Position is random number of steps away from center.
-  
-  room.hasStaircase = true
-  local dir={ random(-1,1), random(-1,1) }
   local steps = random(0, floor(self.maxRoomSize/2))
-  local row, col = room.center[1], room.center[2]
   
-  for i=1,steps do
-    local nrow, ncol = row+dir[1], col+dir[2]
-    if not (self:getTile(nrow, ncol).roomId == room.id) then
-      break
-    else
-      local row, col = nrow, ncol
-    end
-  end
+  local nrow, ncol = room.center[1], room.center[2]
+  repeat 
+    row, col = nrow, ncol
+    nrow, ncol = getRandNeighbour(row, col)
+  until self:getTile(nrow, ncol).roomId ~= room.id or steps == 0
+
   self:getTile(row, col).class=Tile.STAIRCASE
-  self.staircases[#self.staircases+1] = { row, col }
+  room.hasStaircase = true
+  table.insert( self.staircases, { row, col } )
 end
