@@ -14,7 +14,7 @@ function getAdjacentPos(row, col)
   local result = {}
   for dx =-1,1 do
     for dy=-1,1 do 
-      result[#result+1] = { row+dy, col+dx }
+      result[#result+1] = { r=row+dy, c=col+dx }
     end  
   end
   for i=1,#result do

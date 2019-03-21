@@ -20,20 +20,21 @@ print("seed: "..seed)
 Level = {height, width, matrix, rooms, entrances, staircases}
 Level.__index = Level
 
+Level.veinSpawnRate = 0.02
+Level.soilSpawnRate = 0.05
+Level.maxRoomSize = 10
+Level.maxRooms = 25
+
 function Level:new(height, width)
   if height < 10 or width < 10 then error("Level must have height>=10, width>=10") end
-  local level = { height=height, 
-                width=width, 
-                matrix={}, 
-                maxRoomSize = 15,
-                maxRooms = 15,
+  local level = { height=height,
+                width=width,
+                matrix={},
                 rooms = {},
                 entrances = {},
                 staircases = {},
-                rootRoom=nil, 
-                endRoom=nil,
-                veinSpawnRate = 0.02,
-                soilSpawnRate = 0.05
+                rootRoom=nil,
+                endRoom=nil
                 }
   
   setmetatable(level, Level)
@@ -148,8 +149,8 @@ function Level:getAdjacentTiles(row, col)
   local result={}
   local adj=getAdjacentPos(row,col)
   for i=1,#adj do
-    local row = adj[i][1]
-    local col = adj[i][2]
+    local row = adj[i].r
+    local col = adj[i].c
     result[#result+1] = self:getTile(row, col)
   end
   return result
@@ -158,7 +159,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
   function Level:generateRooms()
-    for i = 1,self.maxRooms do
+    for i = 1,Level.maxRooms do
       self:generateRoom()
     end
   end
@@ -168,11 +169,11 @@ end
 function Level:generateRoom()
   -- Will randomly place rooms across tiles (no overlapping)
   local minRoomSize = 3
-  local startRow = random(1, self.height-self.maxRoomSize)
-  local startCol = random(1, self.width-self.maxRoomSize)
+  local startRow = random(1, self.height-Level.maxRoomSize)
+  local startCol = random(1, self.width-Level.maxRoomSize)
   
-  local height = random(minRoomSize, self.maxRoomSize)
-  local width = random(minRoomSize, self.maxRoomSize)
+  local height = random(minRoomSize, Level.maxRoomSize)
+  local width = random(minRoomSize, Level.maxRoomSize)
 
   for i=startRow-1, startRow+height+1 do
     for j=startCol-1, startCol+width+1 do
@@ -235,7 +236,7 @@ function Level:buildCorridor(sRoom, eRoom)
     local adj = getAdjacentPos(srow, scol)
 
     for i=1,#adj do
-      local adjr, adjc = adj[i][1], adj[i][2]
+      local adjr, adjc = adj[i].r, adj[i].c
       if (getDist(adjr, adjc, erow, ecol) < dist) and
           i%2==0        -- not picking diagonals
       then
@@ -260,8 +261,8 @@ function Level:buildCorridorTile(r, c, adj)
   
   self:getTile(r, c).class = Tile.FLOOR
   for i=1,#adj do
-    adjR = adj[i][1]
-    adjC = adj[i][2]
+    adjR = adj[i].r
+    adjC = adj[i].c
     if not (self:getTile(adjR, adjC).class == Tile.FLOOR) then 
       self:placeWall(adjR, adjC)
     end
@@ -319,14 +320,14 @@ function Level:placeWall(r,c)
   
   local tile = self:getTile(r,c)
   
-  if random() <= self.veinSpawnRate then
+  if random() <= Level.veinSpawnRate then
     tile.class = Tile.VEIN
-  elseif random() <= self.soilSpawnRate then
+  elseif random() <= Level.soilSpawnRate then
     tile.class = Tile.SOIL
-    self.soilSpawnRate = 0.6     -- for clustering
+    Level.soilSpawnRate = 0.6     -- for clustering
   else
     tile.class = Tile.WALL
-    self.soilSpawnRate = 0.05
+    Level.soilSpawnRate = 0.05
   end
 end
 
@@ -352,7 +353,7 @@ end
 function Level:placeStaircase(room)
   -- Places staircase in given room. 
   -- Position is random number of steps away from center.
-  local steps = random(0, floor(self.maxRoomSize/2))
+  local steps = random(0, floor(Level.maxRoomSize/2))
   
   local nrow, ncol = room.center[1], room.center[2]
   repeat 
