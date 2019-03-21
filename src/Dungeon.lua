@@ -14,6 +14,7 @@ function Dungeon:new(nrOfLevels, height, width)
   
   for i=1,nrOfLevels do
     newLevel = Level:new(height, width)
+    newLevel:generateLevel()
     newLevel:setLevelNr(i)
     dungeon[i] = newLevel
   end
