@@ -49,6 +49,8 @@ end
 function prims(unvisited)
   len = #unvisited
   local root=table.remove(unvisited, 1)
+  if #unvisited==0 then return root, root end
+  
   local visited={}
   table.insert(visited, root)
   repeat

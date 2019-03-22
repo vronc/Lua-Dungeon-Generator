@@ -5,6 +5,7 @@ local RoomModule = require("Room")
 local random = math.random
 local floor = math.floor
 local ceil = math.ceil
+local min = math.min
 
 seed = os.time()
 math.randomseed(seed)
@@ -20,8 +21,7 @@ print("seed: "..seed)
 Level = {height, width, matrix, rooms, entrances, staircases}
 Level.__index = Level
 
-Level.M_ROOMS = 25
-Level.M_ROOM_SIZE = 10
+Level.MIN_ROOM_SIZE = 3
 
 Level.veinSpawnRate = 0.02
 Level.soilSpawnRate = 0.05
@@ -39,6 +39,8 @@ function Level:new(height, width)
     endRoom=nil,
     nr=nil
   }
+  level.MAX_ROOM_SIZE = ceil(min(height, width)/10)+5
+  level.MAX_ROOMS = min(height, width)/Level.MIN_ROOM_SIZE
   
   setmetatable(level, Level)
   return level
@@ -79,10 +81,6 @@ function Level:printLevel ()
     space = space.."  "
   end
   print(space..s..space)
-  
-  for i=1,string.len(s) do
-    
-  end
 
     for i=0,self.height+1 do
       local row=""
@@ -138,7 +136,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:isRoom(row,col)
-  return (not (self:getTile(row,col).roomId == 0))
+  return (self:getTile(row,col).roomId ~= 0)
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -159,7 +157,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
   function Level:generateRooms()
-    for i = 1,Level.M_ROOMS do
+    for i = 1,self.MAX_ROOMS do
       self:generateRoom()
     end
   end
@@ -168,12 +166,12 @@ end
   
 function Level:generateRoom()
   -- Will randomly place rooms across tiles (no overlapping)
-  local minRoomSize = 3
-  local startRow = random(1, self.height-Level.M_ROOM_SIZE)
-  local startCol = random(1, self.width-Level.M_ROOM_SIZE)
   
-  local height = random(minRoomSize, Level.M_ROOM_SIZE)
-  local width = random(minRoomSize, Level.M_ROOM_SIZE)
+  local startRow = random(1, self.height-self.MAX_ROOM_SIZE)
+  local startCol = random(1, self.width-self.MAX_ROOM_SIZE)
+  
+  local height = random(Level.MIN_ROOM_SIZE, self.MAX_ROOM_SIZE)
+  local width = random(Level.MIN_ROOM_SIZE, self.MAX_ROOM_SIZE)
 
   for i=startRow-1, startRow+height+1 do
     for j=startCol-1, startCol+width+1 do
@@ -210,8 +208,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
 function Level:generateCorridors()
-  if #self.rooms < 1 then error("Can't generate corridors, no rooms exists")
-  elseif #self.rooms == 1 then return end
+  if #self.rooms < 1 then error("Can't generate corridors, no rooms exists") end
 
   local root, lastLeaf = prims(table.clone(self.rooms))
   self.rootRoom = root
@@ -235,7 +232,7 @@ function Level:buildCorridor(root)
       local row, col = nextTile[1], nextTile[2]
       self:buildTile(row, col)
       
-      if random() < 0.5 then self:randomBlob(row,col) end  -- Makes the corridors a little more interesting 
+      --if random() < 0.5 then self:buildRandomTiles(row,col) end  -- Makes the corridors a little more interesting 
       nextTile = findNext(nextTile,goal,dist)
     until (self:getTile(nextTile[1], nextTile[2]).roomId == neigh.id)
     
@@ -332,7 +329,7 @@ function Level:addStaircases()
   -- Number of staircases depend on number of rooms
   
   local maxStaircases = ceil(#self.rooms-(#self.rooms/2))
-  local staircases = random(2,maxStaircases)
+  local staircases = random(1,maxStaircases)
 
   repeat
     local room = self:getRandRoom()
@@ -348,7 +345,7 @@ end
 function Level:placeStaircase(room)
   -- Places staircase in given room. 
   -- Position is random number of steps away from center.
-  local steps = random(0, floor(Level.M_ROOM_SIZE/2))
+  local steps = random(0, floor(self.MAX_ROOM_SIZE/2))
   
   local nrow, ncol = room.center[1], room.center[2]
   repeat 
@@ -391,7 +388,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Level:randomBlob(r,c)
+function Level:buildRandomTiles(r,c)
   -- Creates random floor tiles around given tile. 
   local rand = random(1,15)
   for i=1,rand do
