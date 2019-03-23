@@ -36,11 +36,10 @@ function Level:new(height, width)
     entrances = {},
     staircases = {},
     rootRoom=nil,
-    endRoom=nil,
-    nr=nil
+    endRoom=nil
   }
   level.MAX_ROOM_SIZE = ceil(min(height, width)/10)+5
-  level.MAX_ROOMS = min(height, width)/Level.MIN_ROOM_SIZE
+  level.MAX_ROOMS = ceil(min(height, width)/Level.MIN_ROOM_SIZE)
   
   setmetatable(level, Level)
   return level
@@ -75,12 +74,6 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
   
 function Level:printLevel ()
-  local s = "L E V E L  "..self.nr
-  local space=""
-  for i=1, floor((self.width+2)/2-(string.len(s))/4) do
-    space = space.."  "
-  end
-  print(space..s..space)
 
     for i=0,self.height+1 do
       local row=""
@@ -91,12 +84,6 @@ function Level:printLevel ()
       print(row)
     end
   end
-  
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Level:setLevelNr(nr)
-  self.nr = nr
-end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
@@ -177,8 +164,7 @@ function Level:generateRoom()
     for j=startCol-1, startCol+width+1 do
       
       if (self:isRoom(i,j)) then
-        -- Room is overlapping other room, room is discarded
-        return
+        return            -- Room is overlapping other room->room is discarded
       end
     end
   end
@@ -199,7 +185,7 @@ function Level:buildRoom(startR, startC, endR, endC)
   for i=startR, endR do
     for j=startC, endC do
       local tile = self:getTile(i,j)
-      tile.roomId, tile.class = id, Tile.FLOOR    -- floor tile
+      tile.roomId, tile.class = id, Tile.FLOOR
     end
   end
   self:addWalls(startR-1, startC-1, endR+1, endC+1)
@@ -232,7 +218,7 @@ function Level:buildCorridor(root)
       local row, col = nextTile[1], nextTile[2]
       self:buildTile(row, col)
       
-      --if random() < 0.5 then self:buildRandomTiles(row,col) end  -- Makes the corridors a little more interesting 
+      if random() < 0.5 then self:buildRandomTiles(row,col) end  -- Makes the corridors a little more interesting 
       nextTile = findNext(nextTile,goal,dist)
     until (self:getTile(nextTile[1], nextTile[2]).roomId == neigh.id)
     
@@ -327,7 +313,7 @@ end
 
 function Level:addStaircases()
   -- Number of staircases depend on number of rooms
-  
+
   local maxStaircases = ceil(#self.rooms-(#self.rooms/2))
   local staircases = random(1,maxStaircases)
 
@@ -345,13 +331,16 @@ end
 function Level:placeStaircase(room)
   -- Places staircase in given room. 
   -- Position is random number of steps away from center.
+  
   local steps = random(0, floor(self.MAX_ROOM_SIZE/2))
   
   local nrow, ncol = room.center[1], room.center[2]
   repeat 
     row, col = nrow, ncol
-    nrow, ncol = getRandNeighbour(row, col)
-  until self:getTile(nrow, ncol).roomId ~= room.id or steps == 0
+    repeat
+      nrow, ncol = getRandNeighbour(row, col)
+    until self:getTile(nrow, ncol).class == Tile.FLOOR
+  until (self:getTile(nrow, ncol).roomId ~= room.id or steps == 0)
 
   self:getTile(row, col).class=Tile.STAIRCASE
   room.hasStaircase = true
@@ -360,36 +349,9 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Level:placeBoss() 
-  c=self:getEnd().center
-  adj = getAdjacentPos(c[1], c[2])
-  i=1
-  repeat
-    endr, endc = adj[i][1], adj[i][2]
-    i=i+1
-  until self:getTile(endr,endc).class == Tile.FLOOR
-  
-  self:getTile(endr,endc).class = Tile.BOSS
-end
-  
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Level:placePlayer()
-  c=self:getRoot().center
-  adj = getAdjacentPos(c[1], c[2])
-  i=1
-  repeat
-    endr, endc = adj[i][1], adj[i][2]
-    i=i+1
-  until self:getTile(endr,endc).class == Tile.FLOOR
-  
-  self:getTile(endr,endc).class = Tile.PLAYER
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
 function Level:buildRandomTiles(r,c)
   -- Creates random floor tiles around given tile. 
+  
   local rand = random(1,15)
   for i=1,rand do
     local r,c = getRandNeighbour(r,c)
