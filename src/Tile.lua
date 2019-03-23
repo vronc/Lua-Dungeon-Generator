@@ -4,16 +4,17 @@
 
 -- Tile objects:
 
---  * Has graphic symbol to represent what kind of tile this is in dungeon
+--  * Keeps track of room association, if not in room (default): roomId = 0
+--  * Has graphic symbol to represent what kind of tile this is in a level
 --    *   " " for empty
 --    *   "." for floor
 --    *   "#" for wall
---    *   "<" for staircase
+--    *   "<" for ascending staircase
+--    *   ">" for descending staircase
 --    *   "%" for soil
 --    *   "*" for mineral vein
 --    *   "'" for open door
 --    *   "+" for closed door
---  * Keeps track of room association, if not in room (default): roomId = 0
 
 Tile = {class, roomId}
 Tile.__index = Tile
@@ -21,7 +22,8 @@ Tile.__index = Tile
 Tile.EMPTY = " "
 Tile.FLOOR = "."
 Tile.WALL = "#"
-Tile.STAIRCASE = "<"
+Tile.A_STAIRCASE = "<"
+Tile.D_STAIRCASE = ">"
 Tile.SOIL = "%"
 Tile.VEIN = "*"
 Tile.C_DOOR = "+"

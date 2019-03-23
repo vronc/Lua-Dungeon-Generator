@@ -1,5 +1,8 @@
 local QueueModule = require("Queue")
 local random = math.random
+local insert = table.insert
+local remove = table.remove
+
 ---------------------------------------------------------------------------
 -- - - - - - - - - - - - - Global Help Functions - - - - - - - - - - - - -- 
 ---------------------------------------------------------------------------
@@ -24,35 +27,57 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function findNext(start, goal, dist)
+function findNext(start, goal)
+  -- Finds next step from start to goal
   row, col = start[1], start[2]
   local adj = getAdjacentPos(start[1], start[2])
+  dist = getDist(start, goal)
 
   for i=1,#adj do
     local adjT = adj[i]
     if (getDist(adjT, goal) < dist) and
-        i%2==0        -- not picking diagonals
+        i%2==0        -- not picking diagonals (would cause too narrow corridors)
     then
-      nextTile = adjT
-      dist = getDist(nextTile, goal)
-      --break           -- comment for more diagonal (shorter) walks!
+      nextPos = adjT
+      dist = getDist(nextPos, goal)
+      --break           -- uncomment for more rectangular paths!
     end
   end
-  return nextTile
+  return nextPos
 end
 
-function getRandNeighbour(row, col)
-  local dir={ random(-1,1), random(-1,1) }
-  return row+dir[1], col+dir[2]
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function getRandNeighbour(row, col, notDiag)
+  if notDiag then 
+    local f = {-1, 1}
+    local d = f[random(1,2)]
+    if random()>0.5 then
+      return row+d, col
+    else
+      return row, col+d
+    end
+  else
+    local dir={ random(-1,1), random(-1,1) }
+    return row+dir[1], col+dir[2]
+  end
 end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function withinBounds(r, c, height, width)
+  return (r<height and r>0 and c<width and c>0)
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function prims(unvisited)
   len = #unvisited
-  local root=table.remove(unvisited, 1)
+  local root=remove(unvisited, 1)
   if #unvisited==0 then return root, root end
   
   local visited={}
-  table.insert(visited, root)
+  insert(visited, root)
   repeat
     local dist = 1e309    -- ~inf
     for i=1,#visited do
@@ -64,9 +89,9 @@ function prims(unvisited)
         end
       end
     end
-    v1 = table.remove(unvisited, endIndex)
+    v1 = remove(unvisited, endIndex)
     v0:addNeighbour(v1)
-    table.insert(visited, v1)
+    insert(visited, v1)
 until #visited == len
 
 return visited[1], visited[#visited]
@@ -98,9 +123,3 @@ function getDist(start, goal)
 end  
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
--- source: http://lua-users.org/wiki/StringIndexing
-local strdefi=getmetatable('').__index
-getmetatable('').__index=function(str,i) if type(i) == "number" then
-    return string.sub(str,i,i)
-    else return strdefi[i] end end
