@@ -29,6 +29,7 @@ end
 
 function findNext(start, goal)
   -- Finds next step from start position to goal position in a matrix
+  if start == goal then return goal end
   row, col = start[1], start[2]
   local adj = getAdjacentPos(start[1], start[2])
   dist = getDist(start, goal)

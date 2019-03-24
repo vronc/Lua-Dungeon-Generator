@@ -1,4 +1,4 @@
-local LevelModule = require("Level")
+local LevelModule = require("src/Level")
 
 ---------------------------------------------------------------------------
 -- - - - - - - - - - - - - - - Dungeon object - - - - - - - - - - - - - - - 
