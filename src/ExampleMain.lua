@@ -1,6 +1,9 @@
 local DungeonModule = require("Dungeon")
 
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+-----------------------------------------------------------------------------------
+-- - - - - - - - - - - - - Help functions for main - - - - - - - - - - - - - - - -- 
+-----------------------------------------------------------------------------------
 
 function initPlayer(level)
   c=level:getRoot().center
@@ -30,16 +33,26 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+-----------------------------------------------------------------------------------
+-- - - - - - - - - - - - - - - - Example of main - - - - - - - - - - - - - - - - --
+-----------------------------------------------------------------------------------
 function main()
-  height=40
+
+  -- Settings for level sizes and number of levels in dungeon.
+  height=30
   width=60
-  nrOfLevels=5
+  nrOfLevels=1
 
   dungeon = Dungeon:new(nrOfLevels, height, width)
-  dungeon:generateDungeon()
-  --params: (advanced, maxRooms, maxRoomSize, scatteringFactor)
-  --dungeon:generateDungeon(true, 15, 20, 20)
   
+  -- generate with default settings
+  dungeon:generateDungeon()
+  
+  -- generate with advanced settings, 
+  -- params: (advanced, maxRooms, maxRoomSize, scatteringFactor)
+  -- dungeon:generateDungeon(true, 30, 10, 30)
+  
+  -- inits a player in level 1, a boss in last level
   initPlayer(dungeon.levels[1])
   initBoss(dungeon.levels[#dungeon.levels])
 

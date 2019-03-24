@@ -1,11 +1,11 @@
-local QueueModule = require("Queue")
+
 local random = math.random
 local insert = table.insert
 local remove = table.remove
 
----------------------------------------------------------------------------
--- - - - - - - - - - - - - Global Help Functions - - - - - - - - - - - - -- 
----------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
+-- - - - - - - - - - - - - - - Global Help Functions - - - - - - - - - - - - - - -- 
+-----------------------------------------------------------------------------------
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
@@ -28,7 +28,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function findNext(start, goal)
-  -- Finds next step from start to goal
+  -- Finds next step from start position to goal position in a matrix
   row, col = start[1], start[2]
   local adj = getAdjacentPos(start[1], start[2])
   dist = getDist(start, goal)
