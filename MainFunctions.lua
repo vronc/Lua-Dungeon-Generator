@@ -1,6 +1,6 @@
-local DungeonModule = require("Dungeon")
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+-----------------------------------------------------------------------------------
+-- - - - - - - - - - - Help functions for main examples - - - - - - - - - - - - - -
+-----------------------------------------------------------------------------------
 
 function initPlayer(level)
   c=level:getRoot().center
@@ -28,17 +28,4 @@ function initBoss(level)
   level:getTile(endr,endc).class = Tile.BOSS
 end
 
-function main()
-  height=60
-  width=60
-  nrOfLevels=5
-
-  dungeon = Dungeon:new(nrOfLevels, height, width)
-  initPlayer(dungeon[1])
-  initBoss(dungeon[#dungeon])
-
-  dungeon:printDungeon()
-end
-
-main()
-
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 

@@ -1,20 +1,21 @@
-local FuncModule = require("helpFunctions")
-local TileModule = require("Tile")
-local RoomModule = require("Room")
+local FuncModule = require("src/helpFunctions")
+local TileModule = require("src/Tile")
+local RoomModule = require("src/Room")
 
 local random = math.random
 local floor = math.floor
 local ceil = math.ceil
 local min = math.min
+local max = math.max
 local insert = table.insert
 
 seed = os.time()
 math.randomseed(seed)
-print("seed: "..seed)
+-- print("seed: "..seed)  -- for debugging
 
----------------------------------------------------------------------------
--- - - - - - - - - - - - - - - - Level object - - - - - - - - - - - - - - - 
----------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+-- - - - - - - - - - - - - - - - - - - Level object - - - - - - - - - - - - - - -- - --
+---------------------------------------------------------------------------------------
 
 -- A Level object consist of several Tile objects which together make up 
 -- one dungeon level.
@@ -43,7 +44,7 @@ function Level:new(height, width)
   level.maxRoomSize = ceil(min(height, width)/10)+5
   level.maxRooms = ceil(min(height, width)/Level.MIN_ROOM_SIZE)
   -- Determines amount of random tiles built when generating corridors:
-  level.scatteringFactor = ceil(math.max(height,width)/level.maxRoomSize)
+  level.scatteringFactor = ceil(max(height,width)/level.maxRoomSize)
   
   setmetatable(level, Level)
   return level
@@ -52,31 +53,31 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:generateLevel()
-  -- A default generation of a level. The function calls can be combined in 
-  -- different ways for different outcomes.
+  -- A default generation of a level including rooms, corridors to each room forming 
+  -- an MSF, staircases and doors. addCycles can be uncommented to dig more corridors.
   
-  self:initMap(self.height, self.width)
+  self:initMap()
   self:generateRooms()
   root=self:getRoomTree()
   self:buildCorridors(root)
-  -- self:addCycles()
+  -- self:addCycles(5)
   self:addStaircases()
   self:addDoors()
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Level:initMap(height, width)
+function Level:initMap()
 
   -- Create void
-  for i=-1,height+1 do
+  for i=-1,self.height+1 do
     self.matrix[i] = {}
-    for j=0,width+1 do
+    for j=0,self.width+1 do
       self.matrix[i][j] = Tile:new(Tile.EMPTY)
     end
   end
 
-  self:addWalls(0, 0, height+1, width+1)
+  self:addWalls(0, 0, self.height+1, self.width+1)
 end 
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -118,7 +119,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:getStaircases()
-  -- To retrieve individual staircase, index [1] for row, [2] for col on individual entry.
+  -- Index [1] for row, [2] for col on individual entry for individual staircase.
   return self.staircases
 end
 
@@ -149,22 +150,10 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 function Level:setMaxRoomSize(m)
-  self.maxRoomSize=m
-end
-
--- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
-
-function Level:getAdjacentTiles(row, col)
-  -- returns table containing all adjacent tiles to given position.
-  -- Including self!
-  
-  local result={}
-  local adj=getAdjacentPos(row,col)
-  for i=1,#adj do
-    local row, col = adj[i][1], adj[i][2]
-    insert(result, self:getTile(row, col))
+  if m > min(self.height, self.width) or m < 3 then 
+    error("MaxRoomSize can't be bigger than height-3/width-3 or smaller than 3") 
   end
-  return result
+  self.maxRoomSize=m
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -247,18 +236,18 @@ function Level:buildCorridor(from, to)
   -- Parameters from and to are both Room-objects.
   
   local start, goal = from.center, to.center
-local nextTile = findNext(start, goal)
+  local nextTile = findNext(start, goal)
   repeat
     local row, col = nextTile[1], nextTile[2]
     self:buildTile(row, col)
     
-    if random() < 0.5 then self:buildRandomTiles(row,col) end  -- Makes the corridors a little more interesting 
+    if random() < self.scatteringFactor*0.05 then 
+      self:buildRandomTiles(row,col)    -- Makes the corridors a little more interesting 
+    end
     nextTile = findNext(nextTile, goal)
   until (self:getTile(nextTile[1], nextTile[2]).roomId == to.id)
   
-  if self:isValidEntrance(row, col) then 
-    insert(self.entrances, self:getTile(row,col))
-  end
+  insert(self.entrances, {row,col})
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -279,33 +268,41 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
-function Level:addDoors()
+function Level:addDoors(maxDoors)
   -- Adds open or closed door randomly to entrance tiles.
+  if #self.entrances == 0 or #self.rooms < 2 then return end
+  if not maxDoors then maxDoors = #self.entrances end
   
-  for i=1,#self.entrances do
-    if random() > 0.5 then
-      self.entrances[i].class = Tile.C_DOOR
-    else
-      self.entrances[i].class = Tile.O_DOOR
+  for i=1,maxDoors do
+    e = self.entrances[i]
+    if self:isValidEntrance(e[1], e[2]) then
+      tile = self:getTile(e[1], e[2])
+      if random() > 0.5 then
+        tile.class = Tile.C_DOOR
+      else
+        tile.class = Tile.O_DOOR
+      end
     end
   end
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function Level:addStaircases()
+function Level:addStaircases(maxStaircases)
   -- Adds both descending and ascending staircases to random rooms.
   -- Number of staircases depend on number of rooms.
-
-  local maxStaircases = ceil(#self.rooms-(#self.rooms/2))+1
+  
+  if (not maxStaircases) or (maxStaircases > #self.rooms) then 
+    maxStaircases = ceil(#self.rooms-(#self.rooms/2))+1 
+  end
   local staircases = random(2,maxStaircases)
 
   repeat
     local room = self:getRandRoom()
-    if not room.hasStaircase then
+    if not room.hasStaircase or #self.rooms == 1 then
       self:placeStaircase(room, staircases)
       staircases = staircases-1
-    end 
+    end
   until staircases==0
 end
 
@@ -377,17 +374,31 @@ end
 function Level:isValidEntrance(row, col)
   -- Tile is a valid entrance position if there is a wall above and below it or
   -- to the left and to the right of it.
-  
   return (
     (self:getTile(row+1,col):isWall() and self:getTile(row-1,col):isWall()) or
     (self:getTile(row,col+1):isWall() and self:getTile(row,col-1):isWall())
     )
 end
 
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Level:getAdjacentTiles(row, col)
+  -- returns table containing all adjacent tiles to given position.
+  -- Including self!
+  
+  local result={}
+  local adj=getAdjacentPos(row,col)
+  for i=1,#adj do
+    local row, col = adj[i][1], adj[i][2]
+    insert(result, self:getTile(row, col))
+  end
+  return result
+end
+
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
 function Level:buildRandomTiles(r,c)
-  -- Creates random floor tiles around given tile. 
+  -- Creates random floor tiles starting from given tile. 
   
   local rand = random(1,self.scatteringFactor)
   for i=1,rand do
@@ -403,8 +414,10 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### --
 
-function Level:addCycles()
-  for _=1,5 do
+function Level:addCycles(maxCycles)
+  -- Adds corridors between random rooms.
+  
+  for _=1,maxCycles do
     from = self:getRandRoom()
     to = self:getRandRoom()
     self:buildCorridor(from, to)

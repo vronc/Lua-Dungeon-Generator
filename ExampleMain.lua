@@ -33,7 +33,7 @@ function main()
   dungeon:printDungeon()
 end
 
-main()
+--main()
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
@@ -52,6 +52,7 @@ function mainCustomizedLevel()
   level:setMaxRooms(30)
   level:setMaxRoomSize(5)
   level:setScatteringFactor(15)
+  Level.veinSpawnRate=0.4
   level:initMap(level.height, level.width)
   level:generateRooms()
   root=level:getRoomTree()
@@ -65,4 +66,4 @@ function mainCustomizedLevel()
   level:printLevel()
 end
   
---mainCustomizedLevel()
+mainCustomizedLevel()
