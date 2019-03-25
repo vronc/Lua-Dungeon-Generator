@@ -41,17 +41,17 @@ end
 
 -- Some targeted functions to play with:
 --  * setMaxRooms: maximum nr of rooms.
---  * setMaxRoomSize: keep it lower than height/width though!
+--  * setMaxRoomSize: keep it lower than height/width-3 though!
 --  * setScatteringFactor: increases random scattering of tiles when forming corridors.
--- *  addCycles: adds random cycles between rooms up to parameter value.
--- 
+--  * addCycles: adds random cycles between rooms up to parameter value.
+
 function mainCustomizedLevel()
-  height = 50
-  width = 70
+  height = 40
+  width = 60
   level = Level:new(height, width)
   level:setMaxRooms(30)
   level:setMaxRoomSize(5)
-  level:setScatteringFactor(15)
+  level:setScatteringFactor(10)
   Level.veinSpawnRate=0.4
   level:initMap(level.height, level.width)
   level:generateRooms()

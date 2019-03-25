@@ -42,7 +42,7 @@ function Level:new(height, width)
     endRoom=nil
   }
   level.maxRoomSize = ceil(min(height, width)/10)+5
-  level.maxRooms = ceil(min(height, width)/Level.MIN_ROOM_SIZE)
+  level.maxRooms = ceil(max(height, width)/Level.MIN_ROOM_SIZE)
   -- Determines amount of random tiles built when generating corridors:
   level.scatteringFactor = ceil(max(height,width)/level.maxRoomSize)
   
