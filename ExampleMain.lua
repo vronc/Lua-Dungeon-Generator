@@ -1,6 +1,6 @@
 local DungeonModule = require("src/Dungeon")
 local LevelModule = require("src/Level")
-local FuncModule = require("MainFunctions")
+local FuncModule = require("MainHelpFunc")
 
 -----------------------------------------------------------------------------------
 -- - - - - - - - - - - - - - - - Examples of main - - - - - - - - - - - - - - - - -
@@ -33,7 +33,7 @@ function main()
   dungeon:printDungeon()
 end
 
---main()
+main()
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
@@ -66,4 +66,4 @@ function mainCustomizedLevel()
   level:printLevel()
 end
   
-mainCustomizedLevel()
+--mainCustomizedLevel()
