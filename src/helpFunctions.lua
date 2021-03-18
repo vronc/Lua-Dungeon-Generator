@@ -109,9 +109,12 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
--- source: http://lua-users.org/wiki/CopyTable
 function table.clone(org)
-  return {table.unpack(org)}
+  local newTable = {}
+  for k,v in pairs(org) do
+      newTable[k] = v
+  end
+  return newTable
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
