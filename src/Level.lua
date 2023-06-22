@@ -2,9 +2,9 @@
 -- The path that this module was required in
 local PATH = (...):gsub('%.[^%.]+$', '')
 
-local Tile = require("src.Tile")
-local Room = require("src.Room")
-local Helper = require("src.helpFunctions")
+local Tile = require(PATH .. ".Tile")
+local Room = require(PATH .. ".Room")
+local Helper = require(PATH .. ".helpFunctions")
 
 local random = math.random
 local floor = math.floor
@@ -14,9 +14,7 @@ local max = math.max
 local insert = table.insert
 
 
-local getDist = Helper.getDist
 local cloneTable = Helper.cloneTable
-local tablelength = Helper.tablelength
 local prims = Helper.prims
 local withinBounds = Helper.withinBounds
 local getRandNeighbour = Helper.getRandNeighbour
@@ -36,7 +34,7 @@ math.randomseed(seed)
 -- A Level object consist of several Tile objects which together make up 
 -- one dungeon level.
 
-local Level = {height, width, matrix, rooms, entrances, staircases}
+local Level = {}
 Level.__index = Level
 
 Level.MIN_ROOM_SIZE = 3
@@ -267,8 +265,9 @@ function Level:buildCorridor(from, to)
   
   local start, goal = from.center, to.center
   local nextTile = findNext(start, goal)
+  local row, col
   repeat
-    local row, col = nextTile[1], nextTile[2]
+    row, col = nextTile[1], nextTile[2]
     self:buildTile(row, col)
     
     if random() < self.scatteringFactor*0.05 then 
@@ -304,9 +303,9 @@ function Level:addDoors(maxDoors)
   if not maxDoors then maxDoors = #self.entrances end
   
   for i=1,maxDoors do
-    e = self.entrances[i]
+    local e = self.entrances[i]
     if self:isValidEntrance(e[1], e[2]) then
-      tile = self:getTile(e[1], e[2])
+      local tile = self:getTile(e[1], e[2])
       if random() > 0.5 then
         tile.class = Tile.C_DOOR
       else

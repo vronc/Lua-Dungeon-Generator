@@ -1,4 +1,13 @@
+
+-- The path that this module was required in
+local PATH = (...):gsub('%.[^%.]+$', '')
+local Helper = require(PATH .. ".helpFunctions")
+
 local pow = math.pow
+
+local tablelength = Helper.tablelength
+
+
 
 ---------------------------------------------------------------------------
 -- - - - - - - - - - - - - - - - Room object - - - - - - - - - - - - - - -- 
@@ -10,7 +19,7 @@ local pow = math.pow
 --  * Keeps track of neighbouring rooms by keeping boolean value 
 --  * at index representing neighbours' id's
 
-local Room = { id, neighbours, center, hasStaircase }
+local Room = {}
 Room.__index = Room
 
 function Room:new(id)

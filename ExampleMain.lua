@@ -1,6 +1,11 @@
-local DungeonModule = require("src/Dungeon")
-local LevelModule = require("src/Level")
+
 local FuncModule = require("MainHelpFunc")
+local LuaDungeonGenerator = require("src.LuaDungeonGenerator")
+
+
+local DungeonModule = LuaDungeonGenerator.Level
+local LevelModule = LuaDungeonGenerator.Dungeon
+
 
 -----------------------------------------------------------------------------------
 -- - - - - - - - - - - - - - - - Examples of main - - - - - - - - - - - - - - - - -
@@ -13,11 +18,11 @@ local FuncModule = require("MainHelpFunc")
 function main()
 
   -- Settings for level sizes and number of levels in dungeon.
-  height=40
-  width=60
-  nrOfLevels=5
+  local height=40
+  local width=60
+  local nrOfLevels=5
 
-  dungeon = Dungeon:new(nrOfLevels, height, width)
+  local dungeon = Dungeon:new(nrOfLevels, height, width)
   
   -- generate with default settings
   dungeon:generateDungeon()
