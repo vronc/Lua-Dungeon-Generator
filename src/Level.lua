@@ -42,6 +42,10 @@ Level.MIN_ROOM_SIZE = 3
 Level.veinSpawnRate = 0.02
 Level.soilSpawnRate = 0.05
 
+Level.curSoilSpawnRate = Level.soilSpawnRate
+Level.soilClusteringCoefficient = 0.6 -- The chance for soil to generate another soil next to itself
+
+
 function Level:new(height, width)
   if height < 10 or width < 10 then error("Level must have height>=10, width>=10") end
   
@@ -173,6 +177,18 @@ end
 function Level:setSoilSpawnRate(x)
   assert(x <= 1 and x >= 0, "Must be a number between 0 and 1")
   self.soilSpawnRate = x
+  self.curSoilSpawnRate = x
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Level:setSoilClusterChance(x)
+  --[[
+    a higher number means larger soil deposits.
+    This number represents the chance of soil spawning next to another soil.
+  ]]
+  assert(x <= 1 and x >= 0, "Must be a number between 0 and 1")
+  self.soilClusteringCoefficient = x
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
@@ -361,14 +377,14 @@ function Level:placeWall(r,c)
   
   local tile = self:getTile(r,c)
   
-  if random() <= Level.veinSpawnRate then
+  if random() <= self.veinSpawnRate then
     tile.class = Tile.VEIN
-  elseif random() <= Level.soilSpawnRate then
+  elseif random() <= self.curSoilSpawnRate then
     tile.class = Tile.SOIL
-    Level.soilSpawnRate = 0.6     -- for clustering
+    self.curSoilSpawnRate = self.soilClusteringCoefficient -- for clustering
   else
     tile.class = Tile.WALL
-    Level.soilSpawnRate = 0.05
+    self.curSoilSpawnRate = self.soilSpawnRate
   end
 end
 

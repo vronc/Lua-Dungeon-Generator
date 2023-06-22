@@ -57,7 +57,8 @@ function mainCustomizedLevel()
   level:setMaxRooms(30)
   level:setMaxRoomSize(5)
   level:setScatteringFactor(10)
-  Level.veinSpawnRate=0.4
+  level:setVeinSpawnRate(0.4)
+  level:setVeinSpawnRate(0.2)
   level:initMap(level.height, level.width)
   level:generateRooms()
   local root=level:getRoomTree()
@@ -71,4 +72,4 @@ function mainCustomizedLevel()
   level:printLevel()
 end
   
---mainCustomizedLevel()
+mainCustomizedLevel()

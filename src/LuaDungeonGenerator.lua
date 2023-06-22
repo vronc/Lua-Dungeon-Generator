@@ -14,5 +14,6 @@ LuaDungeonGenerator.Level = require(PATH .. ".Level")
 LuaDungeonGenerator.Dungeon = require(PATH .. ".Dungeon")
 LuaDungeonGenerator.Room = require(PATH .. ".Room")
 LuaDungeonGenerator.Tile = require(PATH .. ".Tile")
+LuaDungeonGenerator.Helper = require(PATH .. ".helpFunctions")
 
 return LuaDungeonGenerator
