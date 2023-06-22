@@ -9,7 +9,7 @@ local remove = table.remove
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function getAdjacentPos(row, col)
+local function getAdjacentPos(row, col)
   -- returns table containing all adjacent positions [1]:row [2]:col to given position
   -- INCLUDING SELF. to change this:
   -- add if (not (dx == 0 and dy == 0)) then ... end
@@ -27,13 +27,16 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function findNext(start, goal)
+local getDist -- must define here 
+
+local function findNext(start, goal)
   -- Finds next step from start position to goal position in a matrix
   if start == goal then return goal end
-  row, col = start[1], start[2]
-  local adj = getAdjacentPos(start[1], start[2])
-  dist = getDist(start, goal)
+  local row, col = start[1], start[2]
+  local adj = getAdjacentPos(row, col)
+  local dist = getDist(start, goal)
 
+  local nextPos
   for i=1,#adj do
     local adjT = adj[i]
     if (getDist(adjT, goal) < dist) and
@@ -66,17 +69,18 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function withinBounds(r, c, height, width)
+local function withinBounds(r, c, height, width)
   return (r<height and r>0 and c<width and c>0)
 end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function prims(unvisited)
-  len = #unvisited
+local function prims(unvisited)
+  local len = #unvisited
   local root=remove(unvisited, 1)
   if #unvisited==0 then return root, root end
   
+  local v0, v1, endIndex
   local visited={}
   insert(visited, root)
   repeat
@@ -101,7 +105,7 @@ end
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
 -- source: https://stackoverflow.com/questions/2705793/how-to-get-number-of-entries-in-a-lua-table
-function tablelength(T)
+local function tablelength(T)
   local count = 0
   for _ in pairs(T) do count = count + 1 end
   return count
@@ -109,7 +113,7 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
-function table.clone(org)
+local function cloneTable(org)
   local newTable = {}
   for k,v in pairs(org) do
       newTable[k] = v
@@ -127,3 +131,14 @@ function getDist(start, goal)
 end  
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+return {
+  getDist = getDist,
+  cloneTable = cloneTable,
+  tablelength = tablelength,
+  prims = prims,
+  withinBounds = withinBounds,
+  getRandNeighbour = getRandNeighbour,
+  findNext = findNext,
+  getAdjacentPos = getAdjacentPos,
+}
