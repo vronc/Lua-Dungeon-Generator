@@ -74,7 +74,7 @@ function Level:generateLevel()
   
   self:initMap()
   self:generateRooms()
-  root=self:getRoomTree()
+  local root=self:getRoomTree()
   self:buildCorridors(root)
   -- self:addCycles(5)
   self:addStaircases()
@@ -165,6 +165,20 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+function Level:setVeinSpawnRate(x)
+  assert(x <= 1 and x >= 0, "Must be a number between 0 and 1")
+  self.veinSpawnRate = x
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Level:setSoilSpawnRate(x)
+  assert(x <= 1 and x >= 0, "Must be a number between 0 and 1")
+  self.soilSpawnRate = x
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
 function Level:setMaxRoomSize(m)
   if m > min(self.height, self.width) or m < 3 then 
     error("MaxRoomSize can't be bigger than height-3/width-3 or smaller than 3") 
@@ -207,7 +221,7 @@ end
 function Level:getRoomTree()
   if #self.rooms < 1 then error("Can't generate room tree, no rooms exists") end
 
-  local root, lastLeaf = prims(table.clone(self.rooms))
+  local root, lastLeaf = prims(cloneTable(self.rooms))
   self.rootRoom = root
   self.endRoom = lastLeaf
 

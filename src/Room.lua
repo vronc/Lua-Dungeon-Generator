@@ -10,7 +10,7 @@ local pow = math.pow
 --  * Keeps track of neighbouring rooms by keeping boolean value 
 --  * at index representing neighbours' id's
 
-Room = { id, neighbours, center, hasStaircase }
+local Room = { id, neighbours, center, hasStaircase }
 Room.__index = Room
 
 function Room:new(id)
@@ -54,3 +54,5 @@ function Room:distanceTo(other)
     pow(math.abs(self.center[2]-other.center[2]),2)
     )
 end
+
+return Room
