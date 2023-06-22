@@ -1,4 +1,7 @@
-local Level= require("src/Level")
+
+local PATH = (...):gsub('%.[^%.]+$', '')
+
+local Level= require(PATH .. ".Level")
 
 ---------------------------------------------------------------------------
 -- - - - - - - - - - - - - - - Dungeon object - - - - - - - - - - - - - - - 

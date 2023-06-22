@@ -1,10 +1,10 @@
 
-local FuncModule = require("MainHelpFunc")
+require("MainHelpFunc")
 local LuaDungeonGenerator = require("src.LuaDungeonGenerator")
 
 
-local DungeonModule = LuaDungeonGenerator.Level
-local LevelModule = LuaDungeonGenerator.Dungeon
+local Dungeon = LuaDungeonGenerator.Dungeon
+local Level = LuaDungeonGenerator.Level
 
 
 -----------------------------------------------------------------------------------
@@ -51,16 +51,16 @@ main()
 --  * addCycles: adds random cycles between rooms up to parameter value.
 
 function mainCustomizedLevel()
-  height = 40
-  width = 60
-  level = Level:new(height, width)
+  local height = 40
+  local width = 60
+  local level = Level:new(height, width)
   level:setMaxRooms(30)
   level:setMaxRoomSize(5)
   level:setScatteringFactor(10)
   Level.veinSpawnRate=0.4
   level:initMap(level.height, level.width)
   level:generateRooms()
-  root=level:getRoomTree()
+  local root=level:getRoomTree()
   level:buildCorridors(root)
   level:buildCorridor(root, level:getEnd())
   level:addCycles(10)
