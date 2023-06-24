@@ -249,10 +249,8 @@ function Level:buildRoom(startR, startC, endR, endC)
 
   local id = #self.rooms+1
   local room = Room:new(id)
-  local w,h = endR-startR, endC-startC
-  local cx,cy =endR-floor(w/2), endC-floor(h/2)
-  room:setSize(w,h)
-  room:setCenter(cx,cy)
+  local r,c =endR-floor((endR-startR)/2), endC-floor((endC-startC)/2)
+  room:setCenter(r,c)
   insert(self.rooms, room)
   
   for i=startR, endR do
