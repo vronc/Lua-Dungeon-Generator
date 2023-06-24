@@ -55,6 +55,13 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+function Room:setSize(w,h)
+  self.width = w
+  self.height = h
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
 function Room:distanceTo(other)
   -- returns distance from self to other room's center.
   

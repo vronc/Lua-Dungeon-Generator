@@ -38,7 +38,7 @@ function main()
   dungeon:printDungeon()
 end
 
-main()
+--main()
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
@@ -55,7 +55,7 @@ function mainCustomizedLevel()
   local width = 60
   local level = Level:new(height, width)
   level:setMaxRooms(30)
-  level:setMaxRoomSize(5)
+  level:setMaxRoomSize(3)
   level:setScatteringFactor(10)
   level:setVeinSpawnRate(0.03)
   level:setSoilSpawnRate(0.1)
@@ -65,7 +65,7 @@ function mainCustomizedLevel()
   local root=level:getRoomTree()
   level:buildCorridors(root)
   level:buildCorridor(root, level:getEnd())
-  level:addCycles(10)
+  level:addCycles(15)
   level:addStaircases(10)
   level:addDoors()
   initBoss(level)
@@ -73,4 +73,4 @@ function mainCustomizedLevel()
   level:printLevel()
 end
   
---mainCustomizedLevel()
+mainCustomizedLevel()
