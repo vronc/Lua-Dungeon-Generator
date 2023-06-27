@@ -1,6 +1,10 @@
-local FuncModule = require("src/helpFunctions")
-local TileModule = require("src/Tile")
-local RoomModule = require("src/Room")
+
+-- The path that this module was required in
+local PATH = (...):gsub('%.[^%.]+$', '')
+
+local Tile = require(PATH .. ".Tile")
+local Room = require(PATH .. ".Room")
+local Helper = require(PATH .. ".helpFunctions")
 
 local random = math.random
 local floor = math.floor
@@ -9,7 +13,17 @@ local min = math.min
 local max = math.max
 local insert = table.insert
 
-seed = os.time()
+
+local cloneTable = Helper.cloneTable
+local prims = Helper.prims
+local withinBounds = Helper.withinBounds
+local getRandNeighbour = Helper.getRandNeighbour
+local findNext = Helper.findNext
+local getAdjacentPos = Helper.getAdjacentPos
+
+
+
+local seed = os.time()
 math.randomseed(seed)
 -- print("seed: "..seed)  -- for debugging
 
@@ -20,13 +34,17 @@ math.randomseed(seed)
 -- A Level object consist of several Tile objects which together make up 
 -- one dungeon level.
 
-Level = {height, width, matrix, rooms, entrances, staircases}
+local Level = {}
 Level.__index = Level
 
 Level.MIN_ROOM_SIZE = 3
 
 Level.veinSpawnRate = 0.02
 Level.soilSpawnRate = 0.05
+
+Level.curSoilSpawnRate = Level.soilSpawnRate
+Level.soilClusteringCoefficient = 0.6 -- The chance for soil to generate another soil next to itself
+
 
 function Level:new(height, width)
   if height < 10 or width < 10 then error("Level must have height>=10, width>=10") end
@@ -58,7 +76,7 @@ function Level:generateLevel()
   
   self:initMap()
   self:generateRooms()
-  root=self:getRoomTree()
+  local root=self:getRoomTree()
   self:buildCorridors(root)
   -- self:addCycles(5)
   self:addStaircases()
@@ -149,6 +167,32 @@ end
 
 -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
 
+function Level:setVeinSpawnRate(x)
+  assert(x <= 1 and x >= 0, "Must be a number between 0 and 1")
+  self.veinSpawnRate = x
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Level:setSoilSpawnRate(x)
+  assert(x <= 1 and x >= 0, "Must be a number between 0 and 1")
+  self.soilSpawnRate = x
+  self.curSoilSpawnRate = x
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
+function Level:setSoilClusterChance(x)
+  --[[
+    a higher number means larger soil deposits.
+    This number represents the chance of soil spawning next to another soil.
+  ]]
+  assert(x <= 1 and x >= 0, "Must be a number between 0 and 1")
+  self.soilClusteringCoefficient = x
+end
+
+-- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- ##### -- 
+
 function Level:setMaxRoomSize(m)
   if m > min(self.height, self.width) or m < 3 then 
     error("MaxRoomSize can't be bigger than height-3/width-3 or smaller than 3") 
@@ -191,7 +235,7 @@ end
 function Level:getRoomTree()
   if #self.rooms < 1 then error("Can't generate room tree, no rooms exists") end
 
-  local root, lastLeaf = prims(table.clone(self.rooms))
+  local root, lastLeaf = prims(cloneTable(self.rooms))
   self.rootRoom = root
   self.endRoom = lastLeaf
 
@@ -237,8 +281,9 @@ function Level:buildCorridor(from, to)
   
   local start, goal = from.center, to.center
   local nextTile = findNext(start, goal)
+  local row, col
   repeat
-    local row, col = nextTile[1], nextTile[2]
+    row, col = nextTile[1], nextTile[2]
     self:buildTile(row, col)
     
     if random() < self.scatteringFactor*0.05 then 
@@ -274,9 +319,9 @@ function Level:addDoors(maxDoors)
   if not maxDoors then maxDoors = #self.entrances end
   
   for i=1,maxDoors do
-    e = self.entrances[i]
+    local e = self.entrances[i]
     if self:isValidEntrance(e[1], e[2]) then
-      tile = self:getTile(e[1], e[2])
+      local tile = self:getTile(e[1], e[2])
       if random() > 0.5 then
         tile.class = Tile.C_DOOR
       else
@@ -332,14 +377,14 @@ function Level:placeWall(r,c)
   
   local tile = self:getTile(r,c)
   
-  if random() <= Level.veinSpawnRate then
+  if random() <= self.veinSpawnRate then
     tile.class = Tile.VEIN
-  elseif random() <= Level.soilSpawnRate then
+  elseif random() <= self.curSoilSpawnRate then
     tile.class = Tile.SOIL
-    Level.soilSpawnRate = 0.6     -- for clustering
+    self.curSoilSpawnRate = self.soilClusteringCoefficient -- for clustering
   else
     tile.class = Tile.WALL
-    Level.soilSpawnRate = 0.05
+    self.curSoilSpawnRate = self.soilSpawnRate
   end
 end
 
@@ -352,6 +397,7 @@ function Level:placeStaircase(room, staircases)
   local steps = random(0, floor(self.maxRoomSize/2))
   
   local nrow, ncol = room.center[1], room.center[2]
+  local row, col
   repeat 
     row, col = nrow, ncol
     repeat
@@ -389,7 +435,7 @@ function Level:getAdjacentTiles(row, col)
   local result={}
   local adj=getAdjacentPos(row,col)
   for i=1,#adj do
-    local row, col = adj[i][1], adj[i][2]
+    row, col = adj[i][1], adj[i][2]
     insert(result, self:getTile(row, col))
   end
   return result
@@ -418,8 +464,10 @@ function Level:addCycles(maxCycles)
   -- Adds corridors between random rooms.
   
   for _=1,maxCycles do
-    from = self:getRandRoom()
-    to = self:getRandRoom()
+    local from = self:getRandRoom()
+    local to = self:getRandRoom()
     self:buildCorridor(from, to)
   end
 end
+
+return Level

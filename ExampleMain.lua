@@ -1,6 +1,11 @@
-local DungeonModule = require("src/Dungeon")
-local LevelModule = require("src/Level")
-local FuncModule = require("MainHelpFunc")
+
+require("MainHelpFunc")
+local LuaDungeonGenerator = require("src.LuaDungeonGenerator")
+
+
+local Dungeon = LuaDungeonGenerator.Dungeon
+local Level = LuaDungeonGenerator.Level
+
 
 -----------------------------------------------------------------------------------
 -- - - - - - - - - - - - - - - - Examples of main - - - - - - - - - - - - - - - - -
@@ -13,11 +18,11 @@ local FuncModule = require("MainHelpFunc")
 function main()
 
   -- Settings for level sizes and number of levels in dungeon.
-  height=40
-  width=60
-  nrOfLevels=5
+  local height=40
+  local width=60
+  local nrOfLevels=5
 
-  dungeon = Dungeon:new(nrOfLevels, height, width)
+  local dungeon = Dungeon:new(nrOfLevels, height, width)
   
   -- generate with default settings
   dungeon:generateDungeon()
@@ -46,16 +51,18 @@ main()
 --  * addCycles: adds random cycles between rooms up to parameter value.
 
 function mainCustomizedLevel()
-  height = 40
-  width = 60
-  level = Level:new(height, width)
+  local height = 40
+  local width = 60
+  local level = Level:new(height, width)
   level:setMaxRooms(30)
   level:setMaxRoomSize(5)
   level:setScatteringFactor(10)
-  Level.veinSpawnRate=0.4
+  level:setVeinSpawnRate(0.03)
+  level:setSoilSpawnRate(0.1)
+  level:setSoilClusterChance(0.5)
   level:initMap(level.height, level.width)
   level:generateRooms()
-  root=level:getRoomTree()
+  local root=level:getRoomTree()
   level:buildCorridors(root)
   level:buildCorridor(root, level:getEnd())
   level:addCycles(10)

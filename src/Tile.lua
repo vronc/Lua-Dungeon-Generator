@@ -16,7 +16,7 @@
 --    *   "'" for open door
 --    *   "+" for closed door
 
-Tile = {class, roomId}
+local Tile = {}
 Tile.__index = Tile
 
 Tile.EMPTY = " "
@@ -52,3 +52,5 @@ function Tile:isWall()
     self.class == Tile.VEIN
     )
 end
+
+return Tile
